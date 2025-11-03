@@ -36,3 +36,9 @@ jobs:
           } else {
             Write-Host "Test project not found. Skipping tests."
           }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AllLive.Core-Release
+          path: AllLive.Core/bin/Release/
