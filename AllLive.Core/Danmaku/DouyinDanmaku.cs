@@ -5,13 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using WebSocketSharp;
 using AllLive.Core.Danmaku.Proto;
 using ProtoBuf;
 using System.IO;
-using System.Security.Cryptography;
 using System.IO.Compression;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -39,9 +39,31 @@ namespace AllLive.Core.Danmaku
         private string ServerUrl { get; set; }
         private string BackupUrl { get; set; }
 
+        private const int MaxReconnectAttempts = 5;
+        private int reconnectAttempts;
+        private bool isStopping;
+        private bool useBackupEndpoint;
+        private CancellationTokenSource reconnectTokenSource;
+        private readonly object connectionLock = new object();
+        private Func<string, string, Task<string>> signatureProvider;
+
+        public DouyinDanmaku()
+        {
+            signatureProvider = DefaultSignatureProvider;
+        }
+
+        public void SetSignatureProvider(Func<string, string, Task<string>> provider)
+        {
+            signatureProvider = provider ?? throw new ArgumentNullException(nameof(provider));
+        }
+
         public async Task Start(object args)
         {
-            danmakuArgs = args as DouyinDanmakuArgs;
+            danmakuArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
+            isStopping = false;
+            reconnectAttempts = 0;
+            useBackupEndpoint = false;
+            CancelReconnect();
             var ts = Utils.GetTimestampMs();
             var query = new Dictionary<string, string>()
             {
@@ -78,50 +100,32 @@ namespace AllLive.Core.Danmaku
             //{ "signature", "00000000" }
         };
 
-            var sign = await GetSign(danmakuArgs.RoomId, danmakuArgs.UserId);
+            var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
             query.Add("signature", sign);
 
             // 将参数拼接到url
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
             ServerUrl = url;
             BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
-            ws = new WebSocket(ServerUrl);
-            // 添加请求头
-            ws.CustomHeaders = new Dictionary<string, string>() {
-                {"Origin","https://live.douyin.com" },
-                {"Cookie", danmakuArgs.Cookie},
-                {"User-Agnet","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0" }
-              };
-            // 必须设置ssl协议为Tls12
-            ws.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnMessage += Ws_OnMessage;
-            ws.OnClose += Ws_OnClose;
-            timer = new Timer(HeartbeatTime);
-            timer.Elapsed += Timer_Elapsed;
-            await Task.Run(() =>
-            {
-                ws.Connect();
-            });
+            await ConnectAsync(useBackup: false);
         }
         private async void Ws_OnOpen(object sender, EventArgs e)
         {
+            reconnectAttempts = 0;
+            useBackupEndpoint = false;
+            CancelReconnect();
             await Task.Run(() =>
             {
-                //发送进房信息
                 SendHeartBeatData();
-
             });
-            timer.Start();
-
+            timer?.Start();
         }
 
         private async void Ws_OnMessage(object sender, MessageEventArgs e)
         {
             try
             {
+                reconnectAttempts = 0;
                 var message = e.RawData;
                 var wssPackage = DeserializeProto<PushFrame>(message);
                 var logId = wssPackage.logId;
@@ -195,12 +199,24 @@ namespace AllLive.Core.Danmaku
         }
         private void Ws_OnClose(object sender, CloseEventArgs e)
         {
-            OnClose?.Invoke(this, e.Reason);
+            if (isStopping)
+            {
+                OnClose?.Invoke(this, e.Reason);
+                return;
+            }
+
+            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "服务器连接已关闭" : e.Reason);
         }
 
         private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
         {
-            OnClose?.Invoke(this, e.Message);
+            if (isStopping)
+            {
+                OnClose?.Invoke(this, e.Message);
+                return;
+            }
+
+            HandleConnectionFailure(e.Message);
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -208,40 +224,62 @@ namespace AllLive.Core.Danmaku
             Heartbeat();
         }
 
-        public async void Heartbeat()
+        public void Heartbeat()
         {
-            await Task.Run(() =>
-            {
-                SendHeartBeatData();
-            });
+            SendHeartBeatData();
         }
 
 
         public async Task Stop()
         {
-            timer.Stop();
+            isStopping = true;
+            CancelReconnect();
+            timer?.Stop();
+            timer?.Dispose();
+            timer = null;
             await Task.Run(() =>
             {
-                ws.Close();
+                lock (connectionLock)
+                {
+                    if (ws != null)
+                    {
+                        ws.OnOpen -= Ws_OnOpen;
+                        ws.OnError -= Ws_OnError;
+                        ws.OnMessage -= Ws_OnMessage;
+                        ws.OnClose -= Ws_OnClose;
+                        ws.Close();
+                        ws = null;
+                    }
+                }
             });
         }
         private void SendHeartBeatData()
         {
             var obj = new PushFrame();
             obj.payloadType = "hb";
-
-            ws.Send(SerializeProto(obj));
+            lock (connectionLock)
+            {
+                ws?.Send(SerializeProto(obj));
+            }
 
         }
         private void SendACKData(ulong logId, string internalExt)
         {
-            var obj = new PushFrame();
+            if (string.IsNullOrEmpty(internalExt))
+            {
+                return;
+            }
 
-            obj.payloadType = "ack";
-            obj.logId = logId;
-            obj.payloadType = internalExt;
+            var obj = new PushFrame
+            {
+                logId = logId,
+                payloadType = internalExt
+            };
 
-            ws.Send(SerializeProto(obj));
+            lock (connectionLock)
+            {
+                ws?.Send(SerializeProto(obj));
+            }
 
         }
         public static byte[] GzipDecompress(byte[] bytes)
@@ -296,19 +334,156 @@ namespace AllLive.Core.Danmaku
         /// <param name="roomId">房间ID</param>
         /// <param name="uniqueId">用户唯一ID</param>
         /// <returns></returns>
+        private async Task<string> DefaultSignatureProvider(string roomId, string uniqueId)
+        {
+            var signature = await DouyinSignHelper.GetSignatureAsync(roomId, uniqueId);
+            if (!string.IsNullOrEmpty(signature) && signature != "00000000")
+            {
+                return signature;
+            }
+
+            return await GetSign(roomId, uniqueId);
+        }
+
+        private async Task ConnectAsync(bool useBackup)
+        {
+            var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
+
+            await Task.Run(() =>
+            {
+                try
+                {
+                    lock (connectionLock)
+                    {
+                        CleanupWebSocket();
+
+                        ws = new WebSocket(targetUrl);
+                        ws.CustomHeaders = new Dictionary<string, string>()
+                        {
+                            {"Origin","https://live.douyin.com" },
+                            {"Cookie", danmakuArgs.Cookie},
+                            {"User-Agnet","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0" }
+                        };
+                        ws.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+
+                        ws.OnOpen += Ws_OnOpen;
+                        ws.OnError += Ws_OnError;
+                        ws.OnMessage += Ws_OnMessage;
+                        ws.OnClose += Ws_OnClose;
+
+                        timer?.Stop();
+                        timer?.Dispose();
+                        timer = new Timer(HeartbeatTime)
+                        {
+                            AutoReset = true
+                        };
+                        timer.Elapsed += Timer_Elapsed;
+
+                        ws.Connect();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex);
+                    CleanupWebSocket();
+                    HandleConnectionFailure(ex.Message);
+                }
+            });
+        }
+
+        private void CleanupWebSocket()
+        {
+            if (ws != null)
+            {
+                ws.OnOpen -= Ws_OnOpen;
+                ws.OnError -= Ws_OnError;
+                ws.OnMessage -= Ws_OnMessage;
+                ws.OnClose -= Ws_OnClose;
+                try
+                {
+                    ws.Close();
+                }
+                catch
+                {
+                    // ignored: socket might already be closed
+                }
+                ws = null;
+            }
+
+            if (timer != null)
+            {
+                timer.Elapsed -= Timer_Elapsed;
+                timer.Stop();
+                timer.Dispose();
+                timer = null;
+            }
+        }
+
+        private void HandleConnectionFailure(string reason)
+        {
+            if (reconnectTokenSource != null)
+            {
+                return;
+            }
+
+            reconnectAttempts++;
+            if (reconnectAttempts > MaxReconnectAttempts)
+            {
+                CancelReconnect();
+                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "服务器连接失败" : reason);
+                return;
+            }
+
+            OnClose?.Invoke(this, $"与服务器断开连接，正在尝试重连({reconnectAttempts}/{MaxReconnectAttempts})");
+            useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
+            ScheduleReconnect();
+        }
+
+        private void ScheduleReconnect()
+        {
+            CancelReconnect();
+            reconnectTokenSource = new CancellationTokenSource();
+            var token = reconnectTokenSource.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        await ConnectAsync(useBackupEndpoint);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // ignored
+                }
+            }, token);
+        }
+
+        private void CancelReconnect()
+        {
+            if (reconnectTokenSource != null)
+            {
+                reconnectTokenSource.Cancel();
+                reconnectTokenSource.Dispose();
+                reconnectTokenSource = null;
+            }
+        }
+
         private async Task<string> GetSign(string roomId, string uniqueId)
         {
             try
             {
-                var body=JsonConvert.SerializeObject(new { roomId, uniqueId });
+                var body = JsonConvert.SerializeObject(new { roomId, uniqueId });
                 var result = await HttpUtil.PostJsonString("https://dy.nsapps.cn/signature", body);
                 var json = JObject.Parse(result);
-                return json["data"]["signature"].ToString();
+                return json["data"]?["signature"]?.ToString() ?? "00000000";
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-
                 return "00000000";
             }
         }

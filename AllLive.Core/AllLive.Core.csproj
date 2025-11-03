@@ -22,4 +22,8 @@
     <PackageReference Include="WebSocketSharp-netstandard-customheaders" Version="1.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Scripts\webmssdk.js" />
+  </ItemGroup>
+
 </Project>
