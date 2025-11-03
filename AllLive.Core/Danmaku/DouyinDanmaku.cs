@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using WebSocketSharp;
 using AllLive.Core.Danmaku.Proto;
 using ProtoBuf;
@@ -33,7 +32,7 @@ namespace AllLive.Core.Danmaku
         public event EventHandler<string> OnClose;
         private string baseUrl = "wss://webcast3-ws-web-lq.douyin.com/webcast/im/push/v2/";
 
-        Timer timer;
+        System.Timers.Timer timer;
         WebSocket ws;
         DouyinDanmakuArgs danmakuArgs;
         private string ServerUrl { get; set; }
@@ -219,7 +218,7 @@ namespace AllLive.Core.Danmaku
             HandleConnectionFailure(e.Message);
         }
 
-        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             Heartbeat();
         }
@@ -371,9 +370,9 @@ namespace AllLive.Core.Danmaku
                         ws.OnMessage += Ws_OnMessage;
                         ws.OnClose += Ws_OnClose;
 
-                        timer?.Stop();
-                        timer?.Dispose();
-                        timer = new Timer(HeartbeatTime)
+                    timer?.Stop();
+                    timer?.Dispose();
+                    timer = new System.Timers.Timer(HeartbeatTime)
                         {
                             AutoReset = true
                         };
