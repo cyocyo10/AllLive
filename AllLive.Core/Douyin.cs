@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using System.Xml.Linq;
+using System.Security.Cryptography;
 
 namespace AllLive.Core
 {
@@ -43,12 +44,18 @@ namespace AllLive.Core
             try
             {
                 var resp = await HttpUtil.Head("https://live.douyin.com", headers);
+                var cookieBuilder = new StringBuilder();
                 foreach (var item in resp.Headers.GetValues("Set-Cookie"))
                 {
-                    if (item.Contains("ttwid"))
+                    var cookie = item.Split(';')[0];
+                    if (cookie.Contains("ttwid") || cookie.Contains("__ac_nonce") || cookie.Contains("msToken"))
                     {
-                        headers.Add("Cookie", item.Split(';')[0]);
+                        cookieBuilder.Append(cookie).Append(';');
                     }
+                }
+                if (cookieBuilder.Length > 0)
+                {
+                    headers["Cookie"] = cookieBuilder.ToString().TrimEnd(';');
                 }
             }
             catch (Exception ex)
@@ -132,6 +139,16 @@ namespace AllLive.Core
             var resp = await HttpUtil.GetString(requestUrl,
                 headers: await GetRequestHeaders()
             );
+            Debug.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
+            if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
+            {
+                Debug.WriteLine($"Douyin.GetCategoryRooms 无效响应: {resp}");
+                return new LiveCategoryResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
             var json = JObject.Parse(resp);
             var hasMore = (json["data"]["data"] as JArray).Count >= 15;
             var items = new List<LiveRoomItem>();
@@ -182,7 +199,16 @@ namespace AllLive.Core
             var resp = await HttpUtil.GetString(requestUrl,
                 headers: await GetRequestHeaders()
             );
-
+            Debug.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
+            if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
+            {
+                Debug.WriteLine($"Douyin.GetRecommendRooms 无效响应: {resp}");
+                return new LiveCategoryResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
             var json = JObject.Parse(resp);
             var hasMore = (json["data"]["data"] as JArray).Count >= 15;
             var items = new List<LiveRoomItem>();
@@ -625,9 +651,11 @@ namespace AllLive.Core
             };
 
             var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
+            requestUrl = await GetABougs(requestUrl);
             var cookie = (await GetRequestHeaders())["Cookie"];
             var headers = new Dictionary<string, string>
             {
+                { "authority", "www.douyin.com" },
                 { "accept", "application/json, text/plain, */*" },
                 { "accept-language", "zh-CN,zh;q=0.9,en;q=0.8" },
                 { "cookie", cookie },
@@ -641,25 +669,87 @@ namespace AllLive.Core
                 { "sec-fetch-site", "same-origin" },
                 { "user-agent", USER_AGENT }
             };
+
             var resp = await HttpUtil.GetString(requestUrl, headers);
-            var json = JObject.Parse(resp);
-            var items = new List<LiveRoomItem>();
-            foreach (var item in json["data"])
+            Trace.WriteLine($"Douyin.Search url: {requestUrl}");
+
+            if (string.IsNullOrWhiteSpace(resp))
             {
-                var itemData = JObject.Parse(item["lives"]["rawdata"].ToString());
+                Trace.WriteLine("Douyin.Search empty response");
+                return new LiveSearchResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
+
+            JObject json;
+            try
+            {
+                json = JObject.Parse(resp);
+            }
+            catch (Exception parseEx)
+            {
+                Trace.WriteLine($"Douyin.Search invalid json: {TruncateForLog(resp)}");
+                Trace.WriteLine($"Douyin.Search parse error: {parseEx}");
+                return new LiveSearchResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
+
+            var statusCode = json["status_code"]?.ToObject<int?>() ?? 0;
+            var statusMsg = json["status_msg"]?.ToString();
+            Trace.WriteLine($"Douyin.Search status: {statusCode}, message: {statusMsg}");
+
+            var dataToken = json["data"];
+            JArray livesArray = dataToken as JArray;
+            if (livesArray == null)
+            {
+                livesArray = dataToken?["data"] as JArray;
+            }
+
+            if (livesArray == null)
+            {
+                Trace.WriteLine("Douyin.Search unexpected data structure: " + TruncateForLog(json.ToString(Formatting.None)));
+                return new LiveSearchResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
+
+            var items = new List<LiveRoomItem>();
+            foreach (var item in livesArray)
+            {
+                var rawData = item["lives"]?["rawdata"]?.ToString();
+                if (string.IsNullOrEmpty(rawData))
+                {
+                    continue;
+                }
+
+                var itemData = JObject.Parse(rawData);
                 var roomItem = new LiveRoomItem()
                 {
-                    RoomID = itemData["owner"]["web_rid"].ToString(),
-                    Title = itemData["title"].ToString(),
-                    Cover = itemData["cover"]["url_list"][0].ToString(),
-                    UserName = itemData["owner"]["nickname"].ToString(),
-                    Online = itemData["stats"]["total_user"].ToObject<int>(),
+                    RoomID = itemData["owner"]?["web_rid"]?.ToString() ?? string.Empty,
+                    Title = itemData["title"]?.ToString() ?? string.Empty,
+                    Cover = itemData["cover"]?["url_list"]?.FirstOrDefault()?.ToString() ?? string.Empty,
+                    UserName = itemData["owner"]?["nickname"]?.ToString() ?? string.Empty,
+                    Online = itemData["stats"]?["total_user"]?.ToObject<int>() ?? 0,
                 };
-                items.Add(roomItem);
+                if (!string.IsNullOrEmpty(roomItem.RoomID))
+                {
+                    items.Add(roomItem);
+                }
             }
+
+            var hasMoreToken = (dataToken as JObject)?["has_more"];
+            var hasMore = hasMoreToken?.ToObject<int?>() == 1 || items.Count >= 10;
+
             return new LiveSearchResult()
             {
-                HasMore = items.Count >= 10,
+                HasMore = hasMore,
                 Rooms = items
             };
         }
@@ -673,6 +763,17 @@ namespace AllLive.Core
         {
             return Task.FromResult(new List<LiveSuperChatMessage>());
         }
+
+        private static string TruncateForLog(string value, int max = 400)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= max)
+            {
+                return value;
+            }
+
+            return value.Substring(0, max) + "...";
+        }
+
         private string GenerateRandomNumber(int length)
         {
             var random = new Random();
@@ -692,26 +793,52 @@ namespace AllLive.Core
             return sb.ToString();
         }
 
-        private async Task<string> GetABougs(string url)
+                private async Task<string> GetABougs(string url)
         {
             try
             {
-                var resp = await HttpUtil.PostJsonString("https://dy.nsapps.cn/abogus",
-                   JsonConvert.SerializeObject(new
-                   {
-                       url,
-                       userAgent = USER_AGENT
-                   }
-               ));
-                var obj = JObject.Parse(resp);
-                return obj["data"]["url"].ToString();
+                var uri = new Uri(url);
+                var baseUrl = uri.GetLeftPart(UriPartial.Path);
+                var rawQuery = uri.Query.TrimStart('?');
+                var msToken = GenerateMsToken();
+                var queryForSign = string.IsNullOrEmpty(rawQuery)
+                    ? $"msToken={msToken}"
+                    : $"{rawQuery}&msToken={msToken}";
+
+                var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
+                if (string.IsNullOrEmpty(aBogus))
+                {
+                    return url;
+                }
+
+                var finalQuery = string.IsNullOrEmpty(rawQuery)
+                    ? $"msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}"
+                    : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}";
+
+                return $"{baseUrl}?{finalQuery}";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Debug.WriteLine($"GetABougs 生成失败: {ex}");
                 return url;
             }
+        }
 
+        private static string GenerateMsToken(int length = 107)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var buffer = new byte[length];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(buffer);
+            }
+            var sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++)
+            {
+                sb.Append(chars[buffer[i] % chars.Length]);
+            }
+            return sb.ToString();
         }
     }
 }
+

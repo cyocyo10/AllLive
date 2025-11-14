@@ -159,18 +159,7 @@ namespace AllLive.Core
             var vaa= Environment.CurrentDirectory ;
             
 #if WINDOWS_UWP
-            var jsonObj = new
-            {
-                html = html,
-                rid = rid
-            };
-            var result = await HttpUtil.PostJsonString("http://alive.nsapps.cn/api/AllLive/DouyuSign", Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj));
-            var obj = JObject.Parse(result);
-            if (obj["code"].ToInt32() == 0)
-            {
-                return obj["data"].ToString();
-            }
-            return "";
+            return await DouyuSignRuntime.Current.GenerateSignAsync(html, rid);
 #else
             using (QuickJSRuntime runtime = new QuickJSRuntime())
             using (QuickJSContext context = runtime.CreateContext())
@@ -320,3 +309,4 @@ namespace AllLive.Core
 
 
 }
+

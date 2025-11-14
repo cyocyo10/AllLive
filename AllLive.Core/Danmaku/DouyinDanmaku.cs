@@ -1,4 +1,4 @@
-ï»¿using AllLive.Core.Helper;
+using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
@@ -102,7 +102,7 @@ namespace AllLive.Core.Danmaku
             var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
             query.Add("signature", sign);
 
-            // å°†å‚æ•°æ‹¼æ¥åˆ°url
+            // ½«²ÎÊıÆ´½Óµ½url
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
             ServerUrl = url;
             BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
@@ -198,20 +198,20 @@ namespace AllLive.Core.Danmaku
         }
         private void Ws_OnClose(object sender, CloseEventArgs e)
         {
+            Trace.WriteLine($"DouyinDanmaku Ws_OnClose: Code={e.Code}, Reason={e.Reason}");
             if (isStopping)
             {
-                OnClose?.Invoke(this, e.Reason);
                 return;
             }
 
-            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "æœåŠ¡å™¨è¿æ¥å·²å…³é—­" : e.Reason);
+            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "·şÎñÆ÷Á¬½ÓÒÑ¹Ø±Õ" : e.Reason);
         }
 
         private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
         {
+            Trace.WriteLine("DouyinDanmaku Ws_OnError: " + e.Message);
             if (isStopping)
             {
-                OnClose?.Invoke(this, e.Message);
                 return;
             }
 
@@ -327,26 +327,30 @@ namespace AllLive.Core.Danmaku
         }
 
         /// <summary>
-        /// è·å–Websocketç­¾å
-        /// æœåŠ¡ç«¯ä»£ç ï¼šhttps://github.com/lovelyyoshino/douyin_python
+        /// »ñÈ¡WebsocketÇ©Ãû
+        /// ·şÎñ¶Ë´úÂë£ºhttps://github.com/lovelyyoshino/douyin_python
         /// </summary>
-        /// <param name="roomId">æˆ¿é—´ID</param>
-        /// <param name="uniqueId">ç”¨æˆ·å”¯ä¸€ID</param>
+        /// <param name="roomId">·¿¼äID</param>
+        /// <param name="uniqueId">ÓÃ»§Î¨Ò»ID</param>
         /// <returns></returns>
         private async Task<string> DefaultSignatureProvider(string roomId, string uniqueId)
         {
             var signature = await DouyinSignHelper.GetSignatureAsync(roomId, uniqueId);
+            Trace.WriteLine("DouyinDanmaku signature result: " + signature);
             if (!string.IsNullOrEmpty(signature) && signature != "00000000")
             {
                 return signature;
             }
 
-            return await GetSign(roomId, uniqueId);
+            var fallback = await GetSign(roomId, uniqueId);
+            Trace.WriteLine("DouyinDanmaku fallback signature result: " + fallback);
+            return fallback;
         }
 
         private async Task ConnectAsync(bool useBackup)
         {
             var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
+            Trace.WriteLine("DouyinDanmaku connecting to: " + targetUrl);
 
             await Task.Run(() =>
             {
@@ -429,11 +433,11 @@ namespace AllLive.Core.Danmaku
             if (reconnectAttempts > MaxReconnectAttempts)
             {
                 CancelReconnect();
-                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "æœåŠ¡å™¨è¿æ¥å¤±è´¥" : reason);
+                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "·şÎñÆ÷Á¬½ÓÊ§°Ü" : reason);
                 return;
             }
 
-            OnClose?.Invoke(this, $"ä¸æœåŠ¡å™¨æ–­å¼€è¿æ¥ï¼Œæ­£åœ¨å°è¯•é‡è¿({reconnectAttempts}/{MaxReconnectAttempts})");
+            OnClose?.Invoke(this, $"Óë·şÎñÆ÷¶Ï¿ªÁ¬½Ó£¬ÕıÔÚ³¢ÊÔÖØÁ¬({reconnectAttempts}/{MaxReconnectAttempts})");
             useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
             ScheduleReconnect();
         }
@@ -488,3 +492,5 @@ namespace AllLive.Core.Danmaku
         }
     }
 }
+
+

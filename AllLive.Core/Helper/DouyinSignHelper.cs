@@ -1,7 +1,4 @@
-using QuickJS;
 using System;
-using System.IO;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,51 +6,41 @@ using System.Threading.Tasks;
 namespace AllLive.Core.Helper
 {
     /// <summary>
-    /// æŠ–éŸ³ç­¾åå¸®åŠ©ç±»ï¼Œä½¿ç”¨åµŒå…¥çš„ webmssdk.js é€šè¿‡ QuickJS è®¡ç®— signatureã€‚
+    /// ¶¶ÒôÇ©Ãû¸¨ÖúÀà£¬¸ºÔğÉú³É msStub ²¢µ÷ÓÃ½Å±¾ÔËĞĞÊ±¼ÆËã signature¡£
     /// </summary>
     public static class DouyinSignHelper
     {
         private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
         private const int MaxSignatureAttempts = 5;
 
-        private static readonly Lazy<string> JsCode = new Lazy<string>(LoadWebMsSdkCode);
-
-        public static Task<string> GetSignatureAsync(string roomId, string uniqueId, string userAgent = DefaultUserAgent)
+        public static async Task<string> GetSignatureAsync(string roomId, string uniqueId, string userAgent = DefaultUserAgent)
         {
             if (string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(uniqueId))
             {
-                return Task.FromResult("00000000");
+                return "00000000";
             }
 
-            return Task.Run(() => GenerateSignature(roomId, uniqueId, userAgent));
+            return await GenerateSignatureAsync(roomId, uniqueId, userAgent).ConfigureAwait(false);
         }
 
-        private static string GenerateSignature(string roomId, string uniqueId, string userAgent)
+        private static async Task<string> GenerateSignatureAsync(string roomId, string uniqueId, string userAgent)
         {
             try
             {
                 var msStub = BuildMsStub(roomId, uniqueId);
-                var jsCode = JsCode.Value;
-
-                using (var runtime = new QuickJSRuntime())
-                using (var context = runtime.CreateContext())
+                var signature = string.Empty;
+                for (var attempt = 0; attempt < MaxSignatureAttempts; attempt++)
                 {
-                    context.Eval(jsCode, "webmssdk.js", JSEvalFlags.Global);
-
-                    var escapedUserAgent = EscapeJavaScriptString(userAgent);
-                    var signature = string.Empty;
-
-                    for (var attempt = 0; attempt < MaxSignatureAttempts; attempt++)
+                    signature = await DouyinScriptRuntime.Current
+                        .EvaluateSignatureAsync(msStub, userAgent)
+                        .ConfigureAwait(false);
+                    if (!string.IsNullOrEmpty(signature) && !signature.Contains("-") && !signature.Contains("="))
                     {
-                        signature = context.Eval($"getMSSDKSignature('{msStub}','{escapedUserAgent}')", "signature.js", JSEvalFlags.Global)?.ToString();
-                        if (!string.IsNullOrEmpty(signature) && !signature.Contains("-") && !signature.Contains("="))
-                        {
-                            break;
-                        }
+                        break;
                     }
-
-                    return string.IsNullOrEmpty(signature) ? "00000000" : signature;
                 }
+
+                return string.IsNullOrEmpty(signature) ? "00000000" : signature;
             }
             catch (Exception ex)
             {
@@ -90,43 +77,9 @@ namespace AllLive.Core.Helper
                 {
                     sb.Append(hash[i].ToString("x2"));
                 }
+
                 return sb.ToString();
             }
-        }
-
-        private static string LoadWebMsSdkCode()
-        {
-            var assembly = typeof(DouyinSignHelper).GetTypeInfo().Assembly;
-            var resourceName = FindResourceName(assembly, "webmssdk.js");
-            if (string.IsNullOrEmpty(resourceName))
-            {
-                throw new FileNotFoundException("webmssdk.js resource not found.");
-            }
-
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            using (var reader = new StreamReader(stream ?? throw new InvalidOperationException("Failed to open webmssdk.js resource."), Encoding.UTF8))
-            {
-                return reader.ReadToEnd();
-            }
-        }
-
-        private static string FindResourceName(Assembly assembly, string suffix)
-        {
-            var resources = assembly.GetManifestResourceNames();
-            foreach (var resource in resources)
-            {
-                if (resource.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    return resource;
-                }
-            }
-
-            return null;
-        }
-
-        private static string EscapeJavaScriptString(string value)
-        {
-            return value.Replace("\\", "\\\\").Replace("'", "\\'");
         }
     }
 }

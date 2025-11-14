@@ -1,6 +1,37 @@
 function getMSSDKSignature(msStub, userAgent) {
     document = {}
-    window = {}
+    window = {
+        sessionStorage: {
+            _data: new Map(),
+            getItem(key) {
+                return this._data.has(key) ? this._data.get(key) : null;
+            },
+            setItem(key, value) {
+                this._data.set(key, value);
+            },
+            removeItem(key) {
+                this._data.delete(key);
+            },
+            clear() {
+                this._data.clear();
+            },
+        },
+        localStorage: {
+            _data: new Map(),
+            getItem(key) {
+                return this._data.has(key) ? this._data.get(key) : null;
+            },
+            setItem(key, value) {
+                this._data.set(key, value);
+            },
+            removeItem(key) {
+                this._data.delete(key);
+            },
+            clear() {
+                this._data.clear();
+            },
+        }
+    }
     navigator = {
         userAgent: userAgent
     }

@@ -19,7 +19,7 @@
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <PackageCertificateThumbprint>04A4B247FD7EBD272C54F299AADF958657539A17</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>5F0BEA425CA140436E7E0440F480831C0792452C</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
@@ -28,7 +28,13 @@
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
-    <PackageCertificateKeyFile />
+    <PackageCertificateKeyFile>AllLive.UWP_TemporaryKey.pfx</PackageCertificateKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ILCSharedAssemblySDKRootX86 Condition="'$(ILCSharedAssemblySDKRootX86)' == '' and Exists('$(NuGetPackageRoot)runtime.win10-x86.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary')">$(NuGetPackageRoot)runtime.win10-x86.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary</ILCSharedAssemblySDKRootX86>
+    <ILCSharedAssemblySDKRootX64 Condition="'$(ILCSharedAssemblySDKRootX64)' == '' and Exists('$(NuGetPackageRoot)runtime.win10-x64.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary')">$(NuGetPackageRoot)runtime.win10-x64.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary</ILCSharedAssemblySDKRootX64>
+    <ILCSharedAssemblySDKRootArm Condition="'$(ILCSharedAssemblySDKRootArm)' == '' and Exists('$(NuGetPackageRoot)runtime.win10-arm.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary')">$(NuGetPackageRoot)runtime.win10-arm.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary</ILCSharedAssemblySDKRootArm>
+    <ILCSharedAssemblySDKRootArm64 Condition="'$(ILCSharedAssemblySDKRootArm64)' == '' and Exists('$(NuGetPackageRoot)runtime.win10-arm64.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary')">$(NuGetPackageRoot)runtime.win10-arm64.microsoft.net.native.sharedlibrary\2.2.8-rel-30601-02\tools\SharedLibrary</ILCSharedAssemblySDKRootArm64>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -51,7 +57,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>False</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
     <DebugSymbols>true</DebugSymbols>
@@ -74,7 +80,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>False</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
     <DebugSymbols>true</DebugSymbols>
@@ -86,7 +92,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>False</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM64'">
     <OutputPath>bin\ARM64\Release\</OutputPath>
@@ -98,7 +104,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>False</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -121,7 +127,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>False</UseDotNetNativeToolchain>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -152,6 +158,10 @@
     <Compile Include="Helper\ExceptionHandler.cs" />
     <Compile Include="Helper\DatabaseHelper.cs" />
     <Compile Include="Helper\LogHelper.cs" />
+    <Compile Include="Helper\WebViewDouyinScriptRunner.cs" />
+    <Compile Include="Helper\LoggingDouyinScriptRunner.cs" />
+    <Compile Include="Helper\TraceRedirector.cs" />
+    <Compile Include="Helper\WebViewDouyuSignRunner.cs" />
     <Compile Include="Helper\MessageCenter.cs" />
     <Compile Include="Helper\SettingHelper.cs" />
     <Compile Include="Helper\Utils.cs" />
@@ -371,6 +381,9 @@
     <PackageReference Include="Microsoft.UI.Xaml">
       <Version>2.8.6</Version>
     </PackageReference>
+    <PackageReference Include="QuickJS.NET">
+      <Version>0.0.3</Version>
+    </PackageReference>
     <PackageReference Include="NLog">
       <Version>4.7.12</Version>
     </PackageReference>
@@ -388,6 +401,22 @@
     </PackageReference>
     <PackageReference Include="ZXing.Net">
       <Version>0.16.10</Version>
+    </PackageReference>
+    <PackageReference Include="runtime.win10-arm.Microsoft.Net.Native.SharedLibrary">
+      <Version>2.2.8-rel-31116-00</Version>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="runtime.win10-arm64.Microsoft.Net.Native.SharedLibrary">
+      <Version>2.2.8-rel-31116-00</Version>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="runtime.win10-x64.Microsoft.Net.Native.SharedLibrary">
+      <Version>2.2.8-rel-31116-00</Version>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="runtime.win10-x86.Microsoft.Net.Native.SharedLibrary">
+      <Version>2.2.8-rel-31116-00</Version>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
