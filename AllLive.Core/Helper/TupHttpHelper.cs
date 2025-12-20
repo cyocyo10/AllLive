@@ -36,21 +36,32 @@ namespace AllLive.Core.Helper
                 uniPacket.setTarsPacketType(Const.PACKET_TYPE_TARSNORMAL);
                 uniPacket.Put("tReq", req);
                 byte[] array = uniPacket.Encode();
+
+                System.Diagnostics.Debug.WriteLine($"[TupHttpHelper] sending request to {baseUrl}, function: {function}, size: {array.Length}");
+
                 var reqContent= new ByteArrayContent(array);
                 reqContent.Headers.Add("Content-Type", "application/x-wup");
                 reqContent.Headers.Add("Content-Length", array.Length.ToString());
                 var response = await httpClient.PostAsync("", reqContent);
 
+                System.Diagnostics.Debug.WriteLine($"[TupHttpHelper] response status: {response.StatusCode}");
+
                 var responseBytes= await response.Content.ReadAsByteArrayAsync();
+
+                System.Diagnostics.Debug.WriteLine($"[TupHttpHelper] response size: {responseBytes.Length}");
              
                 TarsUniPacket respPack =new TarsUniPacket();
                 respPack.Decode(responseBytes);
                 var code = respPack.Get("", 0);
+
+                System.Diagnostics.Debug.WriteLine($"[TupHttpHelper] response code: {code}");
+
                 result = respPack.Get<Resp>("tRsp", result);
                 return result;
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[TupHttpHelper] error: {ex.Message}");
                 return result;
             }
         }
