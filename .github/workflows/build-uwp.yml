@@ -2,9 +2,9 @@ name: Build UWP
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -12,30 +12,31 @@ jobs:
     runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-    - name: Setup NuGet
-      uses: NuGet/setup-nuget@v2
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
 
-    - name: Add Windows SDK
-      uses: fbactions/setup-winsdk@v2
-      with:
-        winsdk-build-version: 19041
+      - name: Decode certificate
+        run: |
+          $cert = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
+          [IO.File]::WriteAllBytes("${{ github.workspace }}\AllLive.UWP\AllLive.UWP_TemporaryKey.pfx", $cert)
 
-    - name: Restore NuGet packages
-      run: nuget restore AllLive.sln
+      - name: Restore NuGet packages
+        run: nuget restore AllLive.sln
 
-    - name: Build AllLive.Core
-      run: msbuild AllLive.Core/AllLive.Core.csproj /p:Configuration=Release /p:Platform="Any CPU"
+      - name: Build AllLive.Core
+        run: msbuild AllLive.Core/AllLive.Core.csproj /p:Configuration=Release /p:Platform="Any CPU"
 
-    - name: Build UWP
-      run: msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false
+      - name: Build UWP
+        run: |
+          msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="AllLive.UWP_TemporaryKey.pfx"
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: AllLive-UWP-x64
-        path: AllLive.UWP/bin/x64/Release/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AllLive-UWP-x64
+          path: AllLive.UWP/AppPackages/
