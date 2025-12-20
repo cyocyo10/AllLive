@@ -274,32 +274,14 @@ namespace AllLive.Core
             return urls;
         }
 
-        private async Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
+        private Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
         {
-            var req = new HYGetCdnTokenReq();
-            req.cdn_type = line.CdnType;
-            req.stream_name = line.StreamName;
-
-            System.Diagnostics.Debug.WriteLine($"[Huya] GetPlayUrl - cdn_type: {line.CdnType}, stream_name: {line.StreamName}");
-
-            var resp = await tupClient.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
-
-            System.Diagnostics.Debug.WriteLine($"[Huya] tup resp - stream_name: {resp.stream_name}, flv_anti_code: {resp.flv_anti_code?.Substring(0, Math.Min(50, resp.flv_anti_code?.Length ?? 0))}...");
-
-            // 使用 tup 返回的 antiCode，如果为空则用原始的
-            var streamName = !string.IsNullOrEmpty(resp.stream_name) ? resp.stream_name : line.StreamName;
-            var antiCode = !string.IsNullOrEmpty(resp.flv_anti_code) ? resp.flv_anti_code : line.FlvAntiCode;
-
-            System.Diagnostics.Debug.WriteLine($"[Huya] using streamName: {streamName}, antiCode from tup: {!string.IsNullOrEmpty(resp.flv_anti_code)}");
-
             var baseUrl = line.Line;
             if (!baseUrl.StartsWith("http")) baseUrl = "https://" + baseUrl;
 
-            var url = $"{baseUrl}/{streamName}.flv?{antiCode}&codec=264";
+            var url = $"{baseUrl}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
             if (bitRate > 0) url += $"&ratio={bitRate}";
-
-            System.Diagnostics.Debug.WriteLine($"[Huya] final url: {url}");
-            return url;
+            return Task.FromResult(url);
         }
 
         public async Task<bool> GetLiveStatus(object roomId)
