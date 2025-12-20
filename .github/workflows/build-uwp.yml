@@ -1,0 +1,36 @@
+name: Build UWP
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore AllLive.sln
+
+    - name: Build AllLive.Core
+      run: msbuild AllLive.Core/AllLive.Core.csproj /p:Configuration=Release /p:Platform="Any CPU"
+
+    - name: Build UWP
+      run: msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxBundlePlatforms="x64" /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AllLive-UWP-x64
+        path: AllLive.UWP/bin/x64/Release/
