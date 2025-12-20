@@ -331,7 +331,11 @@ namespace AllLive.Core
         {
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
             var urlData = roomDetail.Data as HuyaUrlDataModel;
-            if (urlData.BitRates.Count == 0)
+            if (urlData == null)
+            {
+                return Task.FromResult(qualities);
+            }
+            if (urlData.BitRates == null || urlData.BitRates.Count == 0)
             {
                 urlData.BitRates = new List<HuyaBitRateModel>() {
                     new HuyaBitRateModel()
@@ -372,6 +376,11 @@ namespace AllLive.Core
             //    };
             //}
             //var url = GetRealUrl(urlData.Url);
+
+            if (urlData.Lines == null)
+            {
+                urlData.Lines = new List<HuyaLineModel>();
+            }
 
             foreach (var item in urlData.BitRates)
             {
@@ -462,6 +471,10 @@ namespace AllLive.Core
         {
             var data = qn.Data as HuyaQualityData;
             var urls = new List<string>();
+            if (data?.Lines == null)
+            {
+                return urls;
+            }
             foreach (var line in data.Lines)
             {
                 urls.Add(await GetRealUrl(line, data.BitRate));

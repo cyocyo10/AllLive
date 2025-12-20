@@ -1,4 +1,4 @@
-using AllLive.Core.Helper;
+ï»¿using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
@@ -102,7 +102,7 @@ namespace AllLive.Core.Danmaku
             var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
             query.Add("signature", sign);
 
-            // ½«²ÎÊıÆ´½Óµ½url
+            // å°†å‚æ•°æ‹¼æ¥åˆ°url
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
             ServerUrl = url;
             BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
@@ -204,7 +204,7 @@ namespace AllLive.Core.Danmaku
                 return;
             }
 
-            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "·şÎñÆ÷Á¬½ÓÒÑ¹Ø±Õ" : e.Reason);
+            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "æœåŠ¡å™¨è¿æ¥å·²å…³é—­" : e.Reason);
         }
 
         private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
@@ -233,22 +233,13 @@ namespace AllLive.Core.Danmaku
         {
             isStopping = true;
             CancelReconnect();
-            timer?.Stop();
-            timer?.Dispose();
-            timer = null;
             await Task.Run(() =>
             {
                 lock (connectionLock)
                 {
-                    if (ws != null)
-                    {
-                        ws.OnOpen -= Ws_OnOpen;
-                        ws.OnError -= Ws_OnError;
-                        ws.OnMessage -= Ws_OnMessage;
-                        ws.OnClose -= Ws_OnClose;
-                        ws.Close();
-                        ws = null;
-                    }
+                    reconnectAttempts = 0;
+                    useBackupEndpoint = false;
+                    CleanupWebSocket();
                 }
             });
         }
@@ -327,11 +318,11 @@ namespace AllLive.Core.Danmaku
         }
 
         /// <summary>
-        /// »ñÈ¡WebsocketÇ©Ãû
-        /// ·şÎñ¶Ë´úÂë£ºhttps://github.com/lovelyyoshino/douyin_python
+        /// è·å–Websocketç­¾å
+        /// æœåŠ¡ç«¯ä»£ç ï¼šhttps://github.com/lovelyyoshino/douyin_python
         /// </summary>
-        /// <param name="roomId">·¿¼äID</param>
-        /// <param name="uniqueId">ÓÃ»§Î¨Ò»ID</param>
+        /// <param name="roomId">æˆ¿é—´ID</param>
+        /// <param name="uniqueId">ç”¨æˆ·å”¯ä¸€ID</param>
         /// <returns></returns>
         private async Task<string> DefaultSignatureProvider(string roomId, string uniqueId)
         {
@@ -433,11 +424,11 @@ namespace AllLive.Core.Danmaku
             if (reconnectAttempts > MaxReconnectAttempts)
             {
                 CancelReconnect();
-                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "·şÎñÆ÷Á¬½ÓÊ§°Ü" : reason);
+                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "æœåŠ¡å™¨è¿æ¥å¤±è´¥" : reason);
                 return;
             }
 
-            OnClose?.Invoke(this, $"Óë·şÎñÆ÷¶Ï¿ªÁ¬½Ó£¬ÕıÔÚ³¢ÊÔÖØÁ¬({reconnectAttempts}/{MaxReconnectAttempts})");
+            OnClose?.Invoke(this, $"ä¸æœåŠ¡å™¨æ–­å¼€è¿æ¥ï¼Œæ­£åœ¨å°è¯•é‡è¿({reconnectAttempts}/{MaxReconnectAttempts})");
             useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
             ScheduleReconnect();
         }
