@@ -471,17 +471,37 @@ namespace AllLive.Core
 
         private async Task<string> GetRealUrl(HuyaLineModel line, int bitrate)
         {
-            HYGetCdnTokenReq req = new HYGetCdnTokenReq();
-            req.stream_name = line.StreamName;
-            req.cdn_type = line.CdnType;
+            try
+            {
+                HYGetCdnTokenReq req = new HYGetCdnTokenReq();
+                req.stream_name = line.StreamName;
+                req.cdn_type = line.CdnType;
 
-            var resp = await tupHttpHelper.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
-            var url =$"{line.Line}/{resp.stream_name}.flv?{resp.flv_anti_code}&codec=264";
+                var resp = await tupHttpHelper.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
+                
+                // 如果 tup 请求成功且返回了 flv_anti_code
+                if (!string.IsNullOrEmpty(resp?.flv_anti_code))
+                {
+                    var url = $"{line.Line}/{resp.stream_name}.flv?{resp.flv_anti_code}&codec=264";
+                    if (bitrate > 0)
+                    {
+                        url += $"&ratio={bitrate}";
+                    }
+                    return url;
+                }
+            }
+            catch
+            {
+                // tup 请求失败，使用备用方案
+            }
+
+            // 备用方案：直接使用原始的 antiCode
+            var fallbackUrl = $"{line.Line}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
             if (bitrate > 0)
             {
-                url += $"&ratio={bitrate}";
+                fallbackUrl += $"&ratio={bitrate}";
             }
-            return url;
+            return fallbackUrl;
         }
 
         public async Task<bool> GetLiveStatus(object roomId)
