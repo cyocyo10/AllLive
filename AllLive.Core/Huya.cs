@@ -23,8 +23,9 @@ namespace AllLive.Core
     {
         public string Name => "虎牙直播";
         public ILiveDanmaku GetDanmaku() => new HuyaDanmaku();
-        private const string UserAgent = "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36 Edg/117.0.0.0";
-        TupHttpHelper tupHttpHelper = new TupHttpHelper("http://wup.huya.com", "liveui", "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36 Edg/117.0.0.0");
+        private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36";
+        private const string TupUserAgent = "HYSDK(Windows,30000002)_APP(pc_exe&7030003&official)_SDK(trans&2.29.0.5493)";
+        TupHttpHelper tupHttpHelper = new TupHttpHelper("http://wup.huya.com", "liveui", "HYSDK(Windows,30000002)_APP(pc_exe&7030003&official)_SDK(trans&2.29.0.5493)");
         public async Task<List<LiveCategory>> GetCategores()
         {
             List<LiveCategory> categories = new List<LiveCategory>() {
@@ -495,8 +496,13 @@ namespace AllLive.Core
                 // tup 请求失败，使用备用方案
             }
 
-            // 备用方案：直接使用原始的 antiCode
-            var fallbackUrl = $"{line.Line}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
+            // 备用方案：直接使用原始的 antiCode 构建 URL
+            var baseUrl = line.Line;
+            if (!baseUrl.StartsWith("http"))
+            {
+                baseUrl = "https://" + baseUrl;
+            }
+            var fallbackUrl = $"{baseUrl}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
             if (bitrate > 0)
             {
                 fallbackUrl += $"&ratio={bitrate}";
