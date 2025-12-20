@@ -29,6 +29,7 @@ namespace AllLive.Core.Helper
             try
             {
                 TarsUniPacket uniPacket = new TarsUniPacket();
+                uniPacket.RequestId = 0;
                 uniPacket.ServantName = servantName;
                 uniPacket.FuncName = function;
                 uniPacket.setTarsVersion(Const.PACKET_TYPE_TUP3);
@@ -36,8 +37,8 @@ namespace AllLive.Core.Helper
                 uniPacket.Put("tReq", req);
                 byte[] array = uniPacket.Encode();
                 var reqContent= new ByteArrayContent(array);
-                // 设置content-type
                 reqContent.Headers.Add("Content-Type", "application/x-wup");
+                reqContent.Headers.Add("Content-Length", array.Length.ToString());
                 var response = await httpClient.PostAsync("", reqContent);
 
                 var responseBytes= await response.Content.ReadAsByteArrayAsync();
