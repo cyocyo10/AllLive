@@ -126,62 +126,57 @@ namespace AllLive.Core
 
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            var resultText = await HttpUtil.GetString($"https://www.huya.com/{roomId}", requestHeaders);
+            var headers = new Dictionary<string, string>()
+            {
+                { "Accept", "*/*" },
+                { "Origin", "https://www.huya.com" },
+                { "Referer", "https://www.huya.com/" },
+                { "User-Agent", kUserAgent },
+            };
+            var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
+            var result = JObject.Parse(resultText);
 
-            // 匹配房间数据
-            var roomDataMatch = Regex.Match(resultText, @"var\s+TT_ROOM_DATA\s*=\s*(\{[\s\S]*?\})", RegexOptions.Singleline);
-            var streamMatch = Regex.Match(resultText, @"stream:\s*(\{[\s\S]*?\n\s*\})", RegexOptions.Singleline);
-
-            if (!roomDataMatch.Success)
+            if (result["status"]?.ToInt32() != 200 || result["data"]?["stream"] == null)
             {
                 return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false };
             }
 
-            JObject roomDataJson;
-            try { roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value); }
-            catch { return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false }; }
+            var data = result["data"];
+            var liveData = data["liveData"];
+            var profileInfo = data["profileInfo"];
+            var stream = data["stream"];
 
-            // 处理 stream 数据 - 和 dart_simple_live 一样的方式
-            var streamDataStr = "\"\"";
-            if (streamMatch.Success)
-            {
-                streamDataStr = streamMatch.Groups[0].Value
-                    .Replace("stream: ", "")
-                    .Split('\n')[0];
-            }
-            
-            JObject streamJson = null;
-            try { streamJson = JObject.Parse(streamDataStr); }
-            catch { /* ignore */ }
-
-            var streamDataJson = streamJson?["data"]?[0];
-            var gameLiveInfo = streamDataJson?["gameLiveInfo"];
-
-            var isLive = roomDataJson["state"]?.ToString() == "ON" && roomDataJson["isReplay"]?.ToObject<bool>() == false;
-
+            long topSid = 0, subSid = 0, yySid = 0;
             var huyaLines = new List<HuyaLineModel>();
             var huyaBiterates = new List<HuyaBitRateModel>();
-            long topSid = 0, subSid = 0, yySid = 0;
 
-            if (isLive && streamDataJson != null)
+            var liveStatus = data["liveStatus"]?.ToString();
+            var isLive = liveStatus == "ON" || liveStatus == "REPLAY";
+
+            if (isLive)
             {
-                var gameStreamInfo = streamDataJson["gameStreamInfoList"]?[0];
-                if (gameStreamInfo != null)
-                {
-                    topSid = gameStreamInfo["lChannelId"]?.ToInt64() ?? 0;
-                    subSid = gameStreamInfo["lSubChannelId"]?.ToInt64() ?? 0;
-                }
-                yySid = gameLiveInfo?["yyid"]?.ToInt64() ?? 0;
+                yySid = profileInfo?["yyid"]?.ToInt64() ?? 0;
 
-                // 读取线路
-                var lines = streamDataJson["gameStreamInfoList"];
-                if (lines != null)
+                // 获取有效线路
+                var baseSteamInfoList = stream["baseSteamInfoList"] as JArray;
+                if (baseSteamInfoList != null)
                 {
-                    foreach (var item in lines)
+                    var validLines = baseSteamInfoList.Where(line =>
+                    {
+                        int pc = line["iPCPriorityRate"]?.ToInt32() ?? -1;
+                        int web = line["iWebPriorityRate"]?.ToInt32() ?? -1;
+                        int mobile = line["iMobilePriorityRate"]?.ToInt32() ?? -1;
+                        return pc > 0 || web > 0 || mobile > 0;
+                    }).ToList();
+
+                    foreach (var item in validLines)
                     {
                         var sFlvUrl = item["sFlvUrl"]?.ToString() ?? "";
                         if (!string.IsNullOrEmpty(sFlvUrl))
                         {
+                            if (topSid == 0) topSid = item["lChannelId"]?.ToInt64() ?? 0;
+                            if (subSid == 0) subSid = item["lSubChannelId"]?.ToInt64() ?? 0;
+
                             huyaLines.Add(new HuyaLineModel()
                             {
                                 Line = sFlvUrl,
@@ -197,13 +192,16 @@ namespace AllLive.Core
                 }
 
                 // 清晰度
-                var biterates = streamJson["vMultiStreamInfo"];
-                if (biterates != null)
+                var bitRateInfoStr = liveData?["bitRateInfo"]?.ToString();
+                JArray biterates = !string.IsNullOrEmpty(bitRateInfoStr)
+                    ? JArray.Parse(bitRateInfoStr)
+                    : (stream["flv"]?["rateArray"] as JArray ?? new JArray());
+                foreach (var item in biterates)
                 {
-                    foreach (var item in biterates)
+                    var name = item["sDisplayName"]?.ToString() ?? "";
+                    if (name.Contains("HDR")) continue;
+                    if (!huyaBiterates.Any(x => x.Name == name))
                     {
-                        var name = item["sDisplayName"]?.ToString() ?? "";
-                        if (name.Contains("HDR")) continue;
                         huyaBiterates.Add(new HuyaBitRateModel()
                         {
                             BitRate = item["iBitRate"]?.ToInt32() ?? 0,
@@ -213,16 +211,19 @@ namespace AllLive.Core
                 }
             }
 
+            var title = liveData?["introduction"]?.ToString() ?? "";
+            if (string.IsNullOrEmpty(title)) title = liveData?["roomName"]?.ToString() ?? "";
+
             return new LiveRoomDetail()
             {
-                Cover = gameLiveInfo?["screenshot"]?.ToString() ?? "",
-                Online = gameLiveInfo?["totalCount"]?.ToInt32() ?? 0,
+                Cover = liveData?["screenshot"]?.ToString() ?? "",
+                Online = liveData?["userCount"]?.ToInt32() ?? 0,
                 RoomID = roomId.ToString(),
-                Title = gameLiveInfo?["introduction"]?.ToString() ?? "",
-                UserName = gameLiveInfo?["nick"]?.ToString() ?? "",
-                UserAvatar = gameLiveInfo?["avatar180"]?.ToString() ?? "",
-                Introduction = gameLiveInfo?["introduction"]?.ToString() ?? "",
-                Notice = gameLiveInfo?["introduction"]?.ToString() ?? "",
+                Title = title,
+                UserName = profileInfo?["nick"]?.ToString() ?? "",
+                UserAvatar = profileInfo?["avatar180"]?.ToString() ?? "",
+                Introduction = liveData?["introduction"]?.ToString() ?? "",
+                Notice = data["welcomeText"]?.ToString() ?? "",
                 Status = isLive,
                 Data = new HuyaUrlDataModel()
                 {
@@ -327,15 +328,18 @@ namespace AllLive.Core
 
         public async Task<bool> GetLiveStatus(object roomId)
         {
-            var resultText = await HttpUtil.GetString($"https://www.huya.com/{roomId}", requestHeaders);
-            var roomDataMatch = Regex.Match(resultText, @"var\s+TT_ROOM_DATA\s*=\s*(\{[\s\S]*?\})", RegexOptions.Singleline);
-            if (!roomDataMatch.Success) return false;
-            try
+            var headers = new Dictionary<string, string>()
             {
-                var roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value);
-                return roomDataJson["state"]?.ToString() == "ON" && roomDataJson["isReplay"]?.ToObject<bool>() == false;
-            }
-            catch { return false; }
+                { "Accept", "*/*" },
+                { "Origin", "https://www.huya.com" },
+                { "Referer", "https://www.huya.com/" },
+                { "User-Agent", kUserAgent },
+            };
+            var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
+            var result = JObject.Parse(resultText);
+            if (result["status"]?.ToInt32() != 200) return false;
+            var liveStatus = result["data"]?["liveStatus"]?.ToString();
+            return liveStatus == "ON" || liveStatus == "REPLAY";
         }
 
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
