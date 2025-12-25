@@ -62,14 +62,24 @@ namespace AllLive.Core.Danmaku
         }
         private async void Ws_OnOpen(object sender, EventArgs e)
         {
-            await Task.Run(() =>
+            if (args == null || ws == null)
             {
-                //发送进房信息
-                ws.Send(JoinData(args.Ayyuid, args.TopSid, args.SubSid));
-
-            });
-            timer.Start();
-
+                OnClose?.Invoke(this, "args or ws is null");
+                return;
+            }
+            try
+            {
+                await Task.Run(() =>
+                {
+                    //发送进房信息
+                    ws.Send(JoinData(args.Ayyuid, args.TopSid, args.SubSid));
+                });
+                timer.Start();
+            }
+            catch (Exception ex)
+            {
+                OnClose?.Invoke(this, ex.Message);
+            }
         }
         private void Ws_OnMessage(object sender, MessageEventArgs e)
         {

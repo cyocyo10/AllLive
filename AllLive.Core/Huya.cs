@@ -137,14 +137,24 @@ namespace AllLive.Core
                 return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false };
             }
 
-            var roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value);
-            var streamDataStr = streamMatch.Success ? streamMatch.Groups[1].Value.Split('\n')[0] : "\"\"";
-            
-            JObject streamJson;
-            try { streamJson = JObject.Parse(streamDataStr); }
+            JObject roomDataJson;
+            try { roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value); }
             catch { return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false }; }
 
-            var streamDataJson = streamJson["data"]?[0];
+            // 处理 stream 数据 - 和 dart_simple_live 一样的方式
+            var streamDataStr = "\"\"";
+            if (streamMatch.Success)
+            {
+                streamDataStr = streamMatch.Groups[0].Value
+                    .Replace("stream: ", "")
+                    .Split('\n')[0];
+            }
+            
+            JObject streamJson = null;
+            try { streamJson = JObject.Parse(streamDataStr); }
+            catch { /* ignore */ }
+
+            var streamDataJson = streamJson?["data"]?[0];
             var gameLiveInfo = streamDataJson?["gameLiveInfo"];
 
             var isLive = roomDataJson["state"]?.ToString() == "ON" && roomDataJson["isReplay"]?.ToObject<bool>() == false;
