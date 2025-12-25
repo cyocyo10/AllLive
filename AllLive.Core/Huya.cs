@@ -304,26 +304,33 @@ namespace AllLive.Core
 
         private async Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
         {
-            var req = new HYGetCdnTokenReq();
-            req.cdn_type = line.CdnType;
-            req.stream_name = line.StreamName;
-            req.presenter_uid = line.PresenterUid;
+            // 先尝试用 tup 获取新的 antiCode
+            try
+            {
+                var req = new HYGetCdnTokenReq();
+                req.cdn_type = line.CdnType;
+                req.stream_name = line.StreamName;
+                req.presenter_uid = line.PresenterUid;
 
-            var resp = await tupClient.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
+                var resp = await tupClient.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
 
-            var antiCode = resp.flv_anti_code;
-            var streamName = resp.stream_name;
+                if (!string.IsNullOrEmpty(resp?.flv_anti_code) && !string.IsNullOrEmpty(resp?.stream_name))
+                {
+                    var baseUrl = line.Line;
+                    if (!baseUrl.StartsWith("http")) baseUrl = "https://" + baseUrl;
+                    var url = $"{baseUrl}/{resp.stream_name}.flv?{resp.flv_anti_code}&codec=264";
+                    if (bitRate > 0) url += $"&ratio={bitRate}";
+                    return url;
+                }
+            }
+            catch { /* fallback to original antiCode */ }
 
-            // fallback
-            if (string.IsNullOrEmpty(antiCode)) antiCode = line.FlvAntiCode;
-            if (string.IsNullOrEmpty(streamName)) streamName = line.StreamName;
-
-            var baseUrl = line.Line;
-            if (!baseUrl.StartsWith("http")) baseUrl = "https://" + baseUrl;
-
-            var url = $"{baseUrl}/{streamName}.flv?{antiCode}&codec=264";
-            if (bitRate > 0) url += $"&ratio={bitRate}";
-            return url;
+            // fallback: 使用原始的 antiCode
+            var fallbackUrl = line.Line;
+            if (!fallbackUrl.StartsWith("http")) fallbackUrl = "https://" + fallbackUrl;
+            fallbackUrl = $"{fallbackUrl}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
+            if (bitRate > 0) fallbackUrl += $"&ratio={bitRate}";
+            return fallbackUrl;
         }
 
         public async Task<bool> GetLiveStatus(object roomId)
