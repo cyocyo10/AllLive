@@ -30,7 +30,18 @@ namespace AllLive.Core
             { "User-Agent", HYSDK_UA },
         };
 
-        TupHttpHelper tupClient = new TupHttpHelper("http://wup.huya.com", "liveui", HYSDK_UA);
+        private TupHttpHelper _tupClient;
+        private TupHttpHelper tupClient
+        {
+            get
+            {
+                if (_tupClient == null)
+                {
+                    _tupClient = new TupHttpHelper("http://wup.huya.com", "liveui", HYSDK_UA);
+                }
+                return _tupClient;
+            }
+        }
 
         public async Task<List<LiveCategory>> GetCategores()
         {
