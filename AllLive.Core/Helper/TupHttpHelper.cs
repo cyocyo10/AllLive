@@ -15,12 +15,16 @@ namespace AllLive.Core.Helper
         private readonly string baseUrl = "";
         private readonly string servantName = "";
         readonly HttpClient httpClient;
-        public TupHttpHelper(string baseUrl, string servantName)
+        public TupHttpHelper(string baseUrl, string servantName, string userAgent = null)
         {
             this.baseUrl = baseUrl;
             this.servantName = servantName;
             httpClient = new HttpClient();
             httpClient.BaseAddress = new Uri(baseUrl);
+            if (!string.IsNullOrEmpty(userAgent))
+            {
+                httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            }
         }
 
         public async Task<Resp> GetAsync<Req, Resp>(Req req, string function,Resp proxy)

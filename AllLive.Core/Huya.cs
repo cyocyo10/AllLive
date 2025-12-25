@@ -19,8 +19,18 @@ namespace AllLive.Core
     {
         public string Name => "虎牙直播";
         public ILiveDanmaku GetDanmaku() => new HuyaDanmaku();
-        private const string kUserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36";
-        TupHttpHelper tupClient = new TupHttpHelper("http://wup.huya.com", "liveui");
+
+        private const string kUserAgent = "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36 Edg/117.0.0.0";
+        private const string HYSDK_UA = "HYSDK(Windows,30000002)_APP(pc_exe&7030003&official)_SDK(trans&2.29.0.5493)";
+
+        private static readonly Dictionary<string, string> requestHeaders = new Dictionary<string, string>()
+        {
+            { "Origin", "https://www.huya.com" },
+            { "Referer", "https://www.huya.com" },
+            { "User-Agent", HYSDK_UA },
+        };
+
+        TupHttpHelper tupClient = new TupHttpHelper("http://wup.huya.com", "liveui", HYSDK_UA);
 
         public async Task<List<LiveCategory>> GetCategores()
         {
@@ -105,105 +115,101 @@ namespace AllLive.Core
 
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            var headers = new Dictionary<string, string>()
-            {
-                { "Accept", "*/*" },
-                { "Origin", "https://www.huya.com" },
-                { "Referer", "https://www.huya.com/" },
-                { "user-agent", kUserAgent },
-            };
-            var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
-            var result = JObject.Parse(resultText);
+            var resultText = await HttpUtil.GetString($"https://www.huya.com/{roomId}", requestHeaders);
 
-            if (result["status"]?.ToInt32() != 200 || result["data"]?["stream"] == null)
+            // 匹配房间数据
+            var roomDataMatch = Regex.Match(resultText, @"var\s+TT_ROOM_DATA\s*=\s*(\{[\s\S]*?\})", RegexOptions.Singleline);
+            var streamMatch = Regex.Match(resultText, @"stream:\s*(\{[\s\S]*?\n\s*\})", RegexOptions.Singleline);
+
+            if (!roomDataMatch.Success)
             {
                 return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false };
             }
 
-            var data = result["data"];
-            long topSid = 0, subSid = 0;
+            var roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value);
+            var streamDataStr = streamMatch.Success ? streamMatch.Groups[1].Value.Split('\n')[0] : "\"\"";
+            
+            JObject streamJson;
+            try { streamJson = JObject.Parse(streamDataStr); }
+            catch { return new LiveRoomDetail() { RoomID = roomId.ToString(), Status = false }; }
+
+            var streamDataJson = streamJson["data"]?[0];
+            var gameLiveInfo = streamDataJson?["gameLiveInfo"];
+
+            var isLive = roomDataJson["state"]?.ToString() == "ON" && roomDataJson["isReplay"]?.ToObject<bool>() == false;
+
             var huyaLines = new List<HuyaLineModel>();
             var huyaBiterates = new List<HuyaBitRateModel>();
+            long topSid = 0, subSid = 0, yySid = 0;
 
-            // 读取可用线路
-            var baseSteamInfoList = data["stream"]["baseSteamInfoList"] as JArray;
-            var validLines = baseSteamInfoList?.Where(line =>
+            if (isLive && streamDataJson != null)
             {
-                int pc = line["iPCPriorityRate"]?.ToInt32() ?? -1;
-                int web = line["iWebPriorityRate"]?.ToInt32() ?? -1;
-                int mobile = line["iMobilePriorityRate"]?.ToInt32() ?? -1;
-                return pc > 0 || web > 0 || mobile > 0;
-            }).ToList() ?? new List<JToken>();
-
-            var flvLines = data["stream"]?["flv"]?["multiLine"] as JArray;
-            if (flvLines != null)
-            {
-                foreach (var item in flvLines)
+                var gameStreamInfo = streamDataJson["gameStreamInfoList"]?[0];
+                if (gameStreamInfo != null)
                 {
-                    if (!string.IsNullOrEmpty(item["url"]?.ToString()))
+                    topSid = gameStreamInfo["lChannelId"]?.ToInt64() ?? 0;
+                    subSid = gameStreamInfo["lSubChannelId"]?.ToInt64() ?? 0;
+                }
+                yySid = gameLiveInfo?["yyid"]?.ToInt64() ?? 0;
+
+                // 读取线路
+                var lines = streamDataJson["gameStreamInfoList"];
+                if (lines != null)
+                {
+                    foreach (var item in lines)
                     {
-                        var currentStream = validLines.FirstOrDefault(x => x["sCdnType"]?.ToString() == item["cdnType"]?.ToString());
-                        if (currentStream != null)
+                        var sFlvUrl = item["sFlvUrl"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(sFlvUrl))
                         {
-                            topSid = currentStream["lChannelId"]?.ToInt64() ?? 0;
-                            subSid = currentStream["lSubChannelId"]?.ToInt64() ?? 0;
                             huyaLines.Add(new HuyaLineModel()
                             {
-                                Line = currentStream["sFlvUrl"]?.ToString() ?? "",
+                                Line = sFlvUrl,
                                 LineType = HuyaLineType.FLV,
-                                FlvAntiCode = currentStream["sFlvAntiCode"]?.ToString() ?? "",
-                                HlsAntiCode = currentStream["sHlsAntiCode"]?.ToString() ?? "",
-                                StreamName = currentStream["sStreamName"]?.ToString() ?? "",
-                                CdnType = currentStream["sCdnType"]?.ToString() ?? "",
+                                FlvAntiCode = item["sFlvAntiCode"]?.ToString() ?? "",
+                                HlsAntiCode = item["sHlsAntiCode"]?.ToString() ?? "",
+                                StreamName = item["sStreamName"]?.ToString() ?? "",
+                                CdnType = item["sCdnType"]?.ToString() ?? "",
+                                PresenterUid = topSid,
                             });
                         }
                     }
                 }
-            }
 
-            // 清晰度
-            var bitRateInfoStr = data["liveData"]?["bitRateInfo"]?.ToString();
-            JArray biterates = !string.IsNullOrEmpty(bitRateInfoStr) 
-                ? JArray.Parse(bitRateInfoStr) 
-                : (data["stream"]?["flv"]?["rateArray"] as JArray ?? new JArray());
-            foreach (var item in biterates)
-            {
-                var name = item["sDisplayName"]?.ToString() ?? "";
-                if (!huyaBiterates.Any(x => x.Name == name))
+                // 清晰度
+                var biterates = streamJson["vMultiStreamInfo"];
+                if (biterates != null)
                 {
-                    huyaBiterates.Add(new HuyaBitRateModel()
+                    foreach (var item in biterates)
                     {
-                        BitRate = item["iBitRate"]?.ToInt32() ?? 0,
-                        Name = name,
-                    });
+                        var name = item["sDisplayName"]?.ToString() ?? "";
+                        if (name.Contains("HDR")) continue;
+                        huyaBiterates.Add(new HuyaBitRateModel()
+                        {
+                            BitRate = item["iBitRate"]?.ToInt32() ?? 0,
+                            Name = name,
+                        });
+                    }
                 }
             }
 
-            var title = data["liveData"]?["introduction"]?.ToString() ?? "";
-            if (string.IsNullOrEmpty(title)) title = data["liveData"]?["roomName"]?.ToString() ?? "";
-
             return new LiveRoomDetail()
             {
-                Cover = data["liveData"]?["screenshot"]?.ToString() ?? "",
-                Online = data["liveData"]?["userCount"]?.ToInt32() ?? 0,
+                Cover = gameLiveInfo?["screenshot"]?.ToString() ?? "",
+                Online = gameLiveInfo?["totalCount"]?.ToInt32() ?? 0,
                 RoomID = roomId.ToString(),
-                Title = title,
-                UserName = data["profileInfo"]?["nick"]?.ToString() ?? "",
-                UserAvatar = data["profileInfo"]?["avatar180"]?.ToString() ?? "",
-                Introduction = data["liveData"]?["introduction"]?.ToString() ?? "",
-                Notice = data["welcomeText"]?.ToString() ?? "",
-                Status = data["liveStatus"]?.ToString() == "ON" || data["liveStatus"]?.ToString() == "REPLAY",
+                Title = gameLiveInfo?["introduction"]?.ToString() ?? "",
+                UserName = gameLiveInfo?["nick"]?.ToString() ?? "",
+                UserAvatar = gameLiveInfo?["avatar180"]?.ToString() ?? "",
+                Introduction = gameLiveInfo?["introduction"]?.ToString() ?? "",
+                Notice = gameLiveInfo?["introduction"]?.ToString() ?? "",
+                Status = isLive,
                 Data = new HuyaUrlDataModel()
                 {
                     Url = "",
                     Lines = huyaLines,
                     BitRates = huyaBiterates,
                 },
-                DanmakuData = new HuyaDanmakuArgs(
-                    data["profileInfo"]?["yyid"]?.ToInt64() ?? 0,
-                    topSid,
-                    subSid
-                ),
+                DanmakuData = new HuyaDanmakuArgs(yySid, topSid, subSid),
                 Url = "https://www.huya.com/" + roomId
             };
         }
@@ -274,30 +280,41 @@ namespace AllLive.Core
             return urls;
         }
 
-        private Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
+        private async Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
         {
+            var req = new HYGetCdnTokenReq();
+            req.cdn_type = line.CdnType;
+            req.stream_name = line.StreamName;
+            req.presenter_uid = line.PresenterUid;
+
+            var resp = await tupClient.GetAsync(req, "getCdnTokenInfo", new HYGetCdnTokenResp());
+
+            var antiCode = resp.flv_anti_code;
+            var streamName = resp.stream_name;
+
+            // fallback
+            if (string.IsNullOrEmpty(antiCode)) antiCode = line.FlvAntiCode;
+            if (string.IsNullOrEmpty(streamName)) streamName = line.StreamName;
+
             var baseUrl = line.Line;
             if (!baseUrl.StartsWith("http")) baseUrl = "https://" + baseUrl;
 
-            var url = $"{baseUrl}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
+            var url = $"{baseUrl}/{streamName}.flv?{antiCode}&codec=264";
             if (bitRate > 0) url += $"&ratio={bitRate}";
-            return Task.FromResult(url);
+            return url;
         }
 
         public async Task<bool> GetLiveStatus(object roomId)
         {
-            var headers = new Dictionary<string, string>()
+            var resultText = await HttpUtil.GetString($"https://www.huya.com/{roomId}", requestHeaders);
+            var roomDataMatch = Regex.Match(resultText, @"var\s+TT_ROOM_DATA\s*=\s*(\{[\s\S]*?\})", RegexOptions.Singleline);
+            if (!roomDataMatch.Success) return false;
+            try
             {
-                { "Accept", "*/*" },
-                { "Origin", "https://www.huya.com" },
-                { "Referer", "https://www.huya.com/" },
-                { "user-agent", kUserAgent },
-            };
-            var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
-            var result = JObject.Parse(resultText);
-            if (result["status"]?.ToInt32() != 200) return false;
-            var liveStatus = result["data"]?["liveStatus"]?.ToString();
-            return liveStatus == "ON" || liveStatus == "REPLAY";
+                var roomDataJson = JObject.Parse(roomDataMatch.Groups[1].Value);
+                return roomDataJson["state"]?.ToString() == "ON" && roomDataJson["isReplay"]?.ToObject<bool>() == false;
+            }
+            catch { return false; }
         }
 
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
@@ -323,6 +340,7 @@ namespace AllLive.Core
         public string HlsAntiCode { get; set; }
         public string CdnType { get; set; }
         public HuyaLineType LineType { get; set; }
+        public long PresenterUid { get; set; }
     }
 
     public class HuyaBitRateModel
