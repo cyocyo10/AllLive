@@ -27,7 +27,7 @@ namespace AllLive.Core
         {
             { "Origin", "https://www.huya.com" },
             { "Referer", "https://www.huya.com" },
-            { "User-Agent", HYSDK_UA },
+            { "User-Agent", kUserAgent },
         };
 
         private TupHttpHelper _tupClient;
