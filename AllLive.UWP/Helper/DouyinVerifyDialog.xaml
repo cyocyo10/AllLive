@@ -5,9 +5,10 @@
     Title="抖音验证"
     PrimaryButtonText="完成验证"
     SecondaryButtonText="取消"
-    DefaultButton="Primary">
+    DefaultButton="Primary"
+    FullSizeDesired="True">
 
-    <Grid Width="800" Height="600">
+    <Grid MinWidth="1000" MinHeight="700">
         <WebView x:Name="webView" />
         <ProgressRing x:Name="loadingRing" IsActive="True" 
                       HorizontalAlignment="Center" VerticalAlignment="Center"
