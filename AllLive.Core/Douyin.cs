@@ -342,6 +342,9 @@ namespace AllLive.Core
 
         private async Task<LiveRoomDetail> GetRoomDetailByWebRidApi(string webRid)
         {
+            Debug.WriteLine($"========== GetRoomDetailByWebRidApi 开始 ==========");
+            Debug.WriteLine($"[RoomDetail] webRid={webRid}");
+            
             // 读取房间信息
             //var data = await _getRoomDataByApi(webRid);
             var data = await GetRoomDataApi(webRid);
@@ -349,18 +352,27 @@ namespace AllLive.Core
 
             var userData = data["user"];
             var roomId = roomData["id_str"].ToString();
+            Debug.WriteLine($"[RoomDetail] roomId={roomId}");
 
             // 读取用户唯一ID，用于弹幕连接
             // 似乎这个参数不是必须的，先随机生成一个
             //var userUniqueId = await GetUserUniqueId(webRid);
             var userUniqueId = GenerateRandomNumber(12).ToString();
+            Debug.WriteLine($"[RoomDetail] userUniqueId={userUniqueId}");
 
             var owner = roomData["owner"];
 
             var roomStatus = roomData["status"].ToObject<int>() == 2;
+            Debug.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
 
             // 主要是为了获取cookie,用于弹幕websocket连接
+            Debug.WriteLine($"[RoomDetail] 获取Cookie (forceRefresh=true)...");
             var headers = await GetRequestHeaders(forceRefresh: true);
+            var cookie = headers.ContainsKey("Cookie") ? headers["Cookie"] : "";
+            Debug.WriteLine($"[RoomDetail] Cookie长度={cookie.Length}");
+            Debug.WriteLine($"[RoomDetail] Cookie预览={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
+            
+            Debug.WriteLine($"========== GetRoomDetailByWebRidApi 结束 ==========");
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -629,6 +641,8 @@ namespace AllLive.Core
 
         public async Task<LiveSearchResult> Search(string keyword, int page = 1)
         {
+            Debug.WriteLine($"========== Douyin.Search 开始 ==========");
+            Debug.WriteLine($"[Search] keyword={keyword}, page={page}");
             var query = new Dictionary<string, string>
             {
                 { "device_platform", "webapp" },
@@ -667,8 +681,13 @@ namespace AllLive.Core
             };
 
             var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
+            Debug.WriteLine($"[Search] 原始URL: {TruncateForLog(requestUrl, 150)}");
+            
             requestUrl = await GetABougs(requestUrl);
+            Debug.WriteLine($"[Search] 签名后URL: {TruncateForLog(requestUrl, 200)}");
+            
             var cookie = (await GetRequestHeaders(forceRefresh: true))["Cookie"];
+            Debug.WriteLine($"[Search] Cookie: {TruncateForLog(cookie, 100)}");
             var searchHeaders = new Dictionary<string, string>
             {
                 { "authority", "www.douyin.com" },
@@ -686,12 +705,14 @@ namespace AllLive.Core
                 { "user-agent", USER_AGENT }
             };
 
+            Debug.WriteLine($"[Search] 开始请求...");
             var resp = await HttpUtil.GetString(requestUrl, searchHeaders);
-            Trace.WriteLine($"Douyin.Search url: {requestUrl}");
+            Debug.WriteLine($"[Search] 响应长度: {resp?.Length ?? 0}");
+            Debug.WriteLine($"[Search] 响应预览: {TruncateForLog(resp, 300)}");
 
             if (string.IsNullOrWhiteSpace(resp))
             {
-                Trace.WriteLine("Douyin.Search empty response");
+                Debug.WriteLine("[Search] 错误: 响应为空");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -706,8 +727,8 @@ namespace AllLive.Core
             }
             catch (Exception parseEx)
             {
-                Trace.WriteLine($"Douyin.Search invalid json: {TruncateForLog(resp)}");
-                Trace.WriteLine($"Douyin.Search parse error: {parseEx}");
+                Debug.WriteLine($"[Search] JSON解析失败: {parseEx.Message}");
+                Debug.WriteLine($"[Search] 原始响应: {TruncateForLog(resp)}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -717,7 +738,7 @@ namespace AllLive.Core
 
             var statusCode = json["status_code"]?.ToObject<int?>() ?? 0;
             var statusMsg = json["status_msg"]?.ToString();
-            Trace.WriteLine($"Douyin.Search status: {statusCode}, message: {statusMsg}");
+            Debug.WriteLine($"[Search] API状态: code={statusCode}, msg={statusMsg}");
 
             var dataToken = json["data"];
             JArray livesArray = dataToken as JArray;
@@ -728,7 +749,8 @@ namespace AllLive.Core
 
             if (livesArray == null)
             {
-                Trace.WriteLine("Douyin.Search unexpected data structure: " + TruncateForLog(json.ToString(Formatting.None)));
+                Debug.WriteLine("[Search] 错误: 数据结构异常，找不到直播列表");
+                Debug.WriteLine($"[Search] JSON结构: {TruncateForLog(json.ToString(Formatting.None))}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -736,6 +758,7 @@ namespace AllLive.Core
                 };
             }
 
+            Debug.WriteLine($"[Search] 找到 {livesArray.Count} 条数据");
             var items = new List<LiveRoomItem>();
             foreach (var item in livesArray)
             {
@@ -763,6 +786,8 @@ namespace AllLive.Core
             var hasMoreToken = (dataToken as JObject)?["has_more"];
             var hasMore = hasMoreToken?.ToObject<int?>() == 1 || items.Count >= 10;
 
+            Debug.WriteLine($"[Search] 解析完成: 有效结果={items.Count}, hasMore={hasMore}");
+            Debug.WriteLine($"========== Douyin.Search 结束 ==========");
             return new LiveSearchResult()
             {
                 HasMore = hasMore,
@@ -810,6 +835,7 @@ namespace AllLive.Core
 
         private async Task<string> GetABougs(string url)
         {
+            Debug.WriteLine($"[GetABougs] 开始生成签名");
             try
             {
                 var uri = new Uri(url);
@@ -820,16 +846,18 @@ namespace AllLive.Core
                     ? $"msToken={msToken}"
                     : $"{rawQuery}&msToken={msToken}";
 
-                Debug.WriteLine($"GetABougs: queryForSign length={queryForSign.Length}");
+                Debug.WriteLine($"[GetABougs] queryForSign长度={queryForSign.Length}");
+                Debug.WriteLine($"[GetABougs] 调用 DouyinABogusHelper.GenerateAsync...");
                 
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
                 
-                Debug.WriteLine($"GetABougs: aBogus result='{aBogus}'");
+                Debug.WriteLine($"[GetABougs] a_bogus结果: '{aBogus}'");
+                Debug.WriteLine($"[GetABougs] a_bogus长度: {aBogus?.Length ?? 0}");
+                Debug.WriteLine($"[GetABougs] a_bogus是否为空: {string.IsNullOrEmpty(aBogus)}");
                 
                 if (string.IsNullOrEmpty(aBogus))
                 {
-                    Debug.WriteLine("GetABougs: aBogus is empty, using fallback");
-                    // 没有签名也尝试请求，某些 API 可能不需要
+                    Debug.WriteLine("[GetABougs] 警告: a_bogus为空，使用无签名URL");
                     var fallbackQuery = string.IsNullOrEmpty(rawQuery)
                         ? $"msToken={Uri.EscapeDataString(msToken)}"
                         : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}";
@@ -840,11 +868,13 @@ namespace AllLive.Core
                     ? $"msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}"
                     : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}";
 
+                Debug.WriteLine($"[GetABougs] 签名成功");
                 return $"{baseUrl}?{finalQuery}";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"GetABougs 生成失败: {ex}");
+                Debug.WriteLine($"[GetABougs] 异常: {ex.Message}");
+                Debug.WriteLine($"[GetABougs] StackTrace: {ex.StackTrace}");
                 return url;
             }
         }

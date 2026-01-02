@@ -39,6 +39,8 @@ namespace AllLive.UWP.Helper
 
         public Task<string> GenerateABogusAsync(string queryString, string userAgent)
         {
+            LogHelper.Log($"[WebViewRunner] GenerateABogusAsync 被调用", LogType.DEBUG);
+            LogHelper.Log($"[WebViewRunner] queryString长度: {queryString?.Length ?? 0}", LogType.DEBUG);
             return ExecuteScriptAsync("getABogus", queryString ?? string.Empty, userAgent ?? string.Empty);
         }
 
@@ -49,9 +51,11 @@ namespace AllLive.UWP.Helper
 
         private async Task<string> ExecuteScriptInternalAsync(string functionName, string arg1, string arg2, bool retryOnFailure)
         {
+            LogHelper.Log($"[WebViewRunner] ExecuteScriptInternalAsync: {functionName}, retry={retryOnFailure}", LogType.DEBUG);
             try
             {
                 await EnsureInitializedAsync().ConfigureAwait(false);
+                LogHelper.Log($"[WebViewRunner] WebView已初始化, _initialized={_initialized}", LogType.DEBUG);
 
                 var escapedArg1 = EscapeJsString(arg1);
                 var escapedArg2 = EscapeJsString(arg2);
@@ -59,23 +63,20 @@ namespace AllLive.UWP.Helper
 
                 return await RunOnUiThreadAsync(async () =>
                 {
-                    LogHelper.Log("WebViewDouyinScriptRunner exec: " + script, LogType.DEBUG);
+                    LogHelper.Log($"[WebViewRunner] 执行JS: {functionName}(...)", LogType.DEBUG);
                     
-                    // 检查 WebView 状态
                     if (_webView == null)
                     {
-                        LogHelper.Log("WebViewDouyinScriptRunner: WebView is null, resetting", LogType.DEBUG);
+                        LogHelper.Log("[WebViewRunner] 错误: WebView为null", LogType.ERROR);
                         throw new InvalidOperationException("WebView is null");
                     }
                     
                     var result = await _webView.InvokeScriptAsync("eval", new[] { script });
-                    LogHelper.Log("WebViewDouyinScriptRunner result: " + Truncate(result ?? string.Empty), LogType.DEBUG);
+                    LogHelper.Log($"[WebViewRunner] JS执行结果: {Truncate(result ?? "null", 100)}", LogType.DEBUG);
                     
-                    // 检查是否返回错误
                     if (!string.IsNullOrEmpty(result) && result.StartsWith("ERROR:"))
                     {
-                        LogHelper.Log("WebViewDouyinScriptRunner JS error: " + result, LogType.ERROR);
-                        // JS 执行出错，重置 WebView
+                        LogHelper.Log($"[WebViewRunner] JS执行错误: {result}", LogType.ERROR);
                         throw new InvalidOperationException(result);
                     }
                     
@@ -84,11 +85,11 @@ namespace AllLive.UWP.Helper
             }
             catch (Exception ex)
             {
-                LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} error: {ex.Message}", LogType.ERROR, ex);
+                LogHelper.Log($"[WebViewRunner] {functionName} 异常: {ex.Message}", LogType.ERROR, ex);
                 
                 if (retryOnFailure)
                 {
-                    LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} retrying after reset", LogType.DEBUG);
+                    LogHelper.Log($"[WebViewRunner] 重试中...", LogType.DEBUG);
                     await ResetWebViewAsync().ConfigureAwait(false);
                     return await ExecuteScriptInternalAsync(functionName, arg1, arg2, retryOnFailure: false).ConfigureAwait(false);
                 }
@@ -126,9 +127,9 @@ namespace AllLive.UWP.Helper
         {
             try
             {
-                LogHelper.Log("WebViewDouyinScriptRunner InitializeAsync starting", LogType.DEBUG);
+                LogHelper.Log("[WebViewRunner] ========== 初始化开始 ==========", LogType.DEBUG);
                 var scripts = await LoadScriptsAsync().ConfigureAwait(false);
-                LogHelper.Log($"WebViewDouyinScriptRunner scripts loaded, length={scripts?.Length ?? 0}", LogType.DEBUG);
+                LogHelper.Log($"[WebViewRunner] 脚本加载完成, 长度={scripts?.Length ?? 0}", LogType.DEBUG);
 
                 await RunOnUiThreadAsync(async () =>
                 {
@@ -147,24 +148,29 @@ namespace AllLive.UWP.Helper
                     await NavigateToBlankAsync();
 
                     _scripts = scripts;
-                    LogHelper.Log("WebViewDouyinScriptRunner evaluating scripts...", LogType.DEBUG);
+                    LogHelper.Log("[WebViewRunner] 注入脚本中...", LogType.DEBUG);
                     var evalResult = await _webView.InvokeScriptAsync("eval", new[] { _scripts });
-                    LogHelper.Log($"WebViewDouyinScriptRunner scripts eval result: {Truncate(evalResult ?? "null")}", LogType.DEBUG);
+                    LogHelper.Log($"[WebViewRunner] 脚本注入结果: {Truncate(evalResult ?? "null", 50)}", LogType.DEBUG);
                     
                     // 验证函数是否存在
-                    var checkResult = await _webView.InvokeScriptAsync("eval", new[] { "typeof getABogus" });
-                    LogHelper.Log($"WebViewDouyinScriptRunner getABogus type: {checkResult}", LogType.DEBUG);
+                    var checkABogus = await _webView.InvokeScriptAsync("eval", new[] { "typeof getABogus" });
+                    LogHelper.Log($"[WebViewRunner] typeof getABogus = {checkABogus}", LogType.DEBUG);
                     
-                    var checkResult2 = await _webView.InvokeScriptAsync("eval", new[] { "typeof getMSSDKSignature" });
-                    LogHelper.Log($"WebViewDouyinScriptRunner getMSSDKSignature type: {checkResult2}", LogType.DEBUG);
+                    var checkSignature = await _webView.InvokeScriptAsync("eval", new[] { "typeof getMSSDKSignature" });
+                    LogHelper.Log($"[WebViewRunner] typeof getMSSDKSignature = {checkSignature}", LogType.DEBUG);
                     
-                    LogHelper.Log("WebViewDouyinScriptRunner initialized", LogType.DEBUG);
+                    if (checkABogus != "function")
+                    {
+                        LogHelper.Log($"[WebViewRunner] 警告: getABogus 不是函数!", LogType.ERROR);
+                    }
+                    
+                    LogHelper.Log("[WebViewRunner] ========== 初始化完成 ==========", LogType.DEBUG);
                     _initialized = true;
                 }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                LogHelper.Log($"WebViewDouyinScriptRunner InitializeAsync error: {ex}", LogType.ERROR, ex);
+                LogHelper.Log($"[WebViewRunner] 初始化异常: {ex}", LogType.ERROR, ex);
             }
             finally
             {

@@ -60,13 +60,21 @@ namespace AllLive.Core.Danmaku
         {
             danmakuArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
             
-            Trace.WriteLine($"DouyinDanmaku.Start: RoomId={danmakuArgs.RoomId}, UserId={danmakuArgs.UserId}");
-            Trace.WriteLine($"DouyinDanmaku.Start: Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(50, danmakuArgs.Cookie?.Length ?? 0))}...");
+            Debug.WriteLine($"========== DouyinDanmaku.Start 开始 ==========");
+            Debug.WriteLine($"[Danmaku] RoomId={danmakuArgs.RoomId}");
+            Debug.WriteLine($"[Danmaku] WebRid={danmakuArgs.WebRid}");
+            Debug.WriteLine($"[Danmaku] UserId={danmakuArgs.UserId}");
+            Debug.WriteLine($"[Danmaku] Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(80, danmakuArgs.Cookie?.Length ?? 0))}...");
+            Debug.WriteLine($"[Danmaku] isStopping(之前)={isStopping}");
+            Debug.WriteLine($"[Danmaku] reconnectAttempts(之前)={reconnectAttempts}");
+            Debug.WriteLine($"[Danmaku] ws是否为null(之前)={ws == null}");
             
             isStopping = false;
             reconnectAttempts = 0;
             useBackupEndpoint = false;
             CancelReconnect();
+            Debug.WriteLine($"[Danmaku] 状态已重置: isStopping={isStopping}, reconnectAttempts={reconnectAttempts}");
+            
             var ts = Utils.GetTimestampMs();
             var query = new Dictionary<string, string>()
             {
@@ -104,16 +112,20 @@ namespace AllLive.Core.Danmaku
         };
 
             var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
+            Debug.WriteLine($"[Danmaku] 签名结果: {sign}");
             query.Add("signature", sign);
 
             // 将参数拼接到url
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
             ServerUrl = url;
             BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
+            Debug.WriteLine($"[Danmaku] WebSocket URL: {url.Substring(0, Math.Min(150, url.Length))}...");
+            Debug.WriteLine($"[Danmaku] 开始连接WebSocket...");
             await ConnectAsync(useBackup: false);
         }
         private async void Ws_OnOpen(object sender, EventArgs e)
         {
+            Debug.WriteLine($"[Danmaku] ✓ WebSocket连接成功!");
             reconnectAttempts = 0;
             useBackupEndpoint = false;
             CancelReconnect();
@@ -122,6 +134,7 @@ namespace AllLive.Core.Danmaku
                 SendHeartBeatData();
             });
             timer?.Start();
+            Debug.WriteLine($"[Danmaku] 心跳定时器已启动");
         }
 
         private async void Ws_OnMessage(object sender, MessageEventArgs e)
@@ -202,9 +215,11 @@ namespace AllLive.Core.Danmaku
         }
         private void Ws_OnClose(object sender, CloseEventArgs e)
         {
-            Trace.WriteLine($"DouyinDanmaku Ws_OnClose: Code={e.Code}, Reason={e.Reason}");
+            Debug.WriteLine($"[Danmaku] ✗ WebSocket关闭: Code={e.Code}, Reason={e.Reason}");
+            Debug.WriteLine($"[Danmaku] isStopping={isStopping}");
             if (isStopping)
             {
+                Debug.WriteLine($"[Danmaku] 正在停止中，忽略关闭事件");
                 return;
             }
 
@@ -213,9 +228,11 @@ namespace AllLive.Core.Danmaku
 
         private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
         {
-            Trace.WriteLine("DouyinDanmaku Ws_OnError: " + e.Message);
+            Debug.WriteLine($"[Danmaku] ✗ WebSocket错误: {e.Message}");
+            Debug.WriteLine($"[Danmaku] isStopping={isStopping}");
             if (isStopping)
             {
+                Debug.WriteLine($"[Danmaku] 正在停止中，忽略错误事件");
                 return;
             }
 
@@ -235,17 +252,22 @@ namespace AllLive.Core.Danmaku
 
         public async Task Stop()
         {
+            Debug.WriteLine($"========== DouyinDanmaku.Stop 开始 ==========");
+            Debug.WriteLine($"[Danmaku] 设置 isStopping=true");
             isStopping = true;
             CancelReconnect();
             await Task.Run(() =>
             {
                 lock (connectionLock)
                 {
+                    Debug.WriteLine($"[Danmaku] 清理WebSocket连接...");
                     reconnectAttempts = 0;
                     useBackupEndpoint = false;
                     CleanupWebSocket();
+                    Debug.WriteLine($"[Danmaku] WebSocket已清理");
                 }
             });
+            Debug.WriteLine($"========== DouyinDanmaku.Stop 结束 ==========");
         }
         private void SendHeartBeatData()
         {
@@ -345,7 +367,8 @@ namespace AllLive.Core.Danmaku
         private async Task ConnectAsync(bool useBackup)
         {
             var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
-            Trace.WriteLine("DouyinDanmaku connecting to: " + targetUrl);
+            Debug.WriteLine($"[Danmaku] ConnectAsync: useBackup={useBackup}");
+            Debug.WriteLine($"[Danmaku] 目标URL: {targetUrl?.Substring(0, Math.Min(100, targetUrl?.Length ?? 0))}...");
 
             await Task.Run(() =>
             {
@@ -353,8 +376,11 @@ namespace AllLive.Core.Danmaku
                 {
                     lock (connectionLock)
                     {
+                        Debug.WriteLine($"[Danmaku] 进入connectionLock");
+                        Debug.WriteLine($"[Danmaku] 清理旧连接...");
                         CleanupWebSocket();
 
+                        Debug.WriteLine($"[Danmaku] 创建新WebSocket...");
                         ws = new WebSocket(targetUrl);
                         ws.CustomHeaders = new Dictionary<string, string>()
                         {
@@ -377,12 +403,15 @@ namespace AllLive.Core.Danmaku
                         };
                         timer.Elapsed += Timer_Elapsed;
 
+                        Debug.WriteLine($"[Danmaku] 调用ws.Connect()...");
                         ws.Connect();
+                        Debug.WriteLine($"[Danmaku] ws.Connect()返回, ws.ReadyState={ws.ReadyState}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine(ex);
+                    Debug.WriteLine($"[Danmaku] ConnectAsync异常: {ex.Message}");
+                    Debug.WriteLine($"[Danmaku] StackTrace: {ex.StackTrace}");
                     CleanupWebSocket();
                     HandleConnectionFailure(ex.Message);
                 }
@@ -391,6 +420,7 @@ namespace AllLive.Core.Danmaku
 
         private void CleanupWebSocket()
         {
+            Debug.WriteLine($"[Danmaku] CleanupWebSocket: ws是否为null={ws == null}, timer是否为null={timer == null}");
             if (ws != null)
             {
                 ws.OnOpen -= Ws_OnOpen;
@@ -399,11 +429,12 @@ namespace AllLive.Core.Danmaku
                 ws.OnClose -= Ws_OnClose;
                 try
                 {
+                    Debug.WriteLine($"[Danmaku] 关闭WebSocket, ReadyState={ws.ReadyState}");
                     ws.Close();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignored: socket might already be closed
+                    Debug.WriteLine($"[Danmaku] 关闭WebSocket异常(忽略): {ex.Message}");
                 }
                 ws = null;
             }
@@ -414,19 +445,27 @@ namespace AllLive.Core.Danmaku
                 timer.Stop();
                 timer.Dispose();
                 timer = null;
+                Debug.WriteLine($"[Danmaku] Timer已清理");
             }
         }
 
         private void HandleConnectionFailure(string reason)
         {
+            Debug.WriteLine($"[Danmaku] HandleConnectionFailure: reason={reason}");
+            Debug.WriteLine($"[Danmaku] reconnectTokenSource是否为null={reconnectTokenSource == null}");
+            
             if (reconnectTokenSource != null)
             {
+                Debug.WriteLine($"[Danmaku] 已有重连任务在进行，跳过");
                 return;
             }
 
             reconnectAttempts++;
+            Debug.WriteLine($"[Danmaku] 重连次数: {reconnectAttempts}/{MaxReconnectAttempts}");
+            
             if (reconnectAttempts > MaxReconnectAttempts)
             {
+                Debug.WriteLine($"[Danmaku] 超过最大重连次数，放弃重连");
                 CancelReconnect();
                 OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "服务器连接失败" : reason);
                 return;
@@ -434,6 +473,7 @@ namespace AllLive.Core.Danmaku
 
             OnClose?.Invoke(this, $"与服务器断开连接，正在尝试重连({reconnectAttempts}/{MaxReconnectAttempts})");
             useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
+            Debug.WriteLine($"[Danmaku] 使用备用端点: {useBackupEndpoint}");
             ScheduleReconnect();
         }
 
