@@ -41,9 +41,25 @@ namespace AllLive.Core
             {
                 return headers;
             }
+            
+            // 强制刷新时，先清除旧的 Cookie，避免使用过期的 __ac_nonce
+            if (forceRefresh)
+            {
+                headers.Remove("Cookie");
+                headers.Remove("cookie");
+            }
+            
             try
             {
-                var resp = await HttpUtil.Head("https://live.douyin.com", headers);
+                // 创建一个不带 Cookie 的 headers 副本用于请求，确保获取全新的 Cookie
+                var requestHeaders = new Dictionary<string, string>
+                {
+                    { "User-Agent", USER_AGENT },
+                    { "Referer", REFERER },
+                    { "Authority", AUTHORITY }
+                };
+                
+                var resp = await HttpUtil.Head("https://live.douyin.com", requestHeaders);
                 var cookieBuilder = new StringBuilder();
                 foreach (var item in resp.Headers.GetValues("Set-Cookie"))
                 {
