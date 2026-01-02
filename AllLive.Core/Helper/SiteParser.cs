@@ -1,4 +1,4 @@
-﻿using AllLive.Core.Interface;
+using AllLive.Core.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,7 +86,7 @@ namespace AllLive.UWP.Helper
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
             }
             return "";
         }

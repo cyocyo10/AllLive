@@ -1,4 +1,4 @@
-ï»¿using AllLive.Core.Helper;
+using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using AllLive.Core.Models.Tars;
@@ -18,8 +18,8 @@ using WebSocketSharp;
 
 
 /*
-* è™ç‰™å¼¹å¹•å®ç°
-* å‚è€ƒé¡¹ç›®ï¼š
+* »¢ÑÀµ¯Ä»ÊµÏÖ
+* ²Î¿¼ÏîÄ¿£º
 * https://github.com/BacooTang/huya-danmu
 * https://github.com/IsoaSFlus/danmaku
 */
@@ -71,7 +71,7 @@ namespace AllLive.Core.Danmaku
             {
                 await Task.Run(() =>
                 {
-                    //å‘é€è¿›æˆ¿ä¿¡æ¯
+                    //·¢ËÍ½ø·¿ĞÅÏ¢
                     ws.Send(JoinData(args.Ayyuid, args.TopSid, args.SubSid));
                 });
                 timer.Start();
@@ -123,7 +123,7 @@ namespace AllLive.Core.Danmaku
                 }
                 else if (type == 22)
                 {
-                    Debug.WriteLine($"æ”¶åˆ°æ¶ˆæ¯:[Type:{type}]");
+                    Trace.WriteLine($"ÊÕµ½ÏûÏ¢:[Type:{type}]");
                     stream = new TarsInputStream(stream.Read(new byte[0], 1, false));
                     HYPushMessageV2 wSPushMessage = new HYPushMessageV2();
                     wSPushMessage.ReadFrom(stream);

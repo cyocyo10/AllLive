@@ -66,7 +66,7 @@ namespace AllLive.Core.Helper
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"QuickJSDouyinScriptRunner.EvaluateSignature error: {ex}");
+                Trace.WriteLine($"QuickJSDouyinScriptRunner.EvaluateSignature error: {ex}");
                 return Task.FromResult(string.Empty);
             }
         }
@@ -90,7 +90,7 @@ namespace AllLive.Core.Helper
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"QuickJSDouyinScriptRunner.GenerateABogus error: {ex}");
+                Trace.WriteLine($"QuickJSDouyinScriptRunner.GenerateABogus error: {ex}");
                 return Task.FromResult(string.Empty);
             }
         }

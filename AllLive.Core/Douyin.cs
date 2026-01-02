@@ -1,4 +1,4 @@
-ï»¿using AllLive.Core.Danmaku;
+using AllLive.Core.Danmaku;
 using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
@@ -21,7 +21,7 @@ namespace AllLive.Core
 {
     public class Douyin : ILiveSite
     {
-        public string Name => "æŠ–éŸ³ç›´æ’­";
+        public string Name => "¶¶ÒôÖ±²¥";
         public ILiveDanmaku GetDanmaku() => new DouyinDanmaku();
 
         private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
@@ -42,7 +42,7 @@ namespace AllLive.Core
                 return headers;
             }
             
-            // å¼ºåˆ¶åˆ·æ–°æ—¶ï¼Œå…ˆæ¸…é™¤æ—§çš„ Cookieï¼Œé¿å…ä½¿ç”¨è¿‡æœŸçš„ __ac_nonce
+            // Ç¿ÖÆË¢ĞÂÊ±£¬ÏÈÇå³ı¾ÉµÄ Cookie£¬±ÜÃâÊ¹ÓÃ¹ıÆÚµÄ __ac_nonce
             if (forceRefresh)
             {
                 headers.Remove("Cookie");
@@ -51,7 +51,7 @@ namespace AllLive.Core
             
             try
             {
-                // åˆ›å»ºä¸€ä¸ªä¸å¸¦ Cookie çš„ headers å‰¯æœ¬ç”¨äºè¯·æ±‚ï¼Œç¡®ä¿è·å–å…¨æ–°çš„ Cookie
+                // ´´½¨Ò»¸ö²»´ø Cookie µÄ headers ¸±±¾ÓÃÓÚÇëÇó£¬È·±£»ñÈ¡È«ĞÂµÄ Cookie
                 var requestHeaders = new Dictionary<string, string>
                 {
                     { "User-Agent", USER_AGENT },
@@ -91,10 +91,10 @@ namespace AllLive.Core
             string renderData = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(renderData))
             {
-                throw new Exception("æ— æ³•è¯»å–åˆ†ç±»æ•°æ®");
+                throw new Exception("ÎŞ·¨¶ÁÈ¡·ÖÀàÊı¾İ");
             }
             renderData = renderData.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
-            // è§£æJSONæ•°æ®
+            // ½âÎöJSONÊı¾İ
             var renderDataJson = JObject.Parse(renderData);
             foreach (var item in renderDataJson["categoryData"])
             {
@@ -155,10 +155,10 @@ namespace AllLive.Core
             var resp = await HttpUtil.GetString(requestUrl,
                 headers: await GetRequestHeaders()
             );
-            Debug.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
+            Trace.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Debug.WriteLine($"Douyin.GetCategoryRooms æ— æ•ˆå“åº”: {resp}");
+                Trace.WriteLine($"Douyin.GetCategoryRooms ÎŞĞ§ÏìÓ¦: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -215,10 +215,10 @@ namespace AllLive.Core
             var resp = await HttpUtil.GetString(requestUrl,
                 headers: await GetRequestHeaders()
             );
-            Debug.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
+            Trace.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Debug.WriteLine($"Douyin.GetRecommendRooms æ— æ•ˆå“åº”: {resp}");
+                Trace.WriteLine($"Douyin.GetRecommendRooms ÎŞĞ§ÏìÓ¦: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -248,12 +248,12 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            // æœ‰ä¸¤ç§roomIdï¼Œä¸€ç§æ˜¯webRidï¼Œä¸€ç§æ˜¯roomId
-            // roomIdæ˜¯ä¸€æ¬¡æ€§çš„ï¼Œç”¨æˆ·æ¯æ¬¡é‡æ–°å¼€æ’­éƒ½ä¼šç”Ÿæˆä¸€ä¸ªæ–°çš„roomId
-            // roomIdä¸€èˆ¬é•¿åº¦ä¸º19ä½ï¼Œä¾‹å¦‚ï¼š7376429659866598196
-            // webRidæ˜¯å›ºå®šçš„ï¼Œç”¨æˆ·æ¯æ¬¡å¼€æ’­éƒ½æ˜¯åŒä¸€ä¸ªwebRid
-            // webRidä¸€èˆ¬é•¿åº¦ä¸º11-12ä½ï¼Œä¾‹å¦‚ï¼š416144012050
-            // è¿™é‡Œç®€å•è¿›è¡Œåˆ¤æ–­ï¼Œå¦‚æœroomIdé•¿åº¦å°äº15ï¼Œåˆ™è®¤ä¸ºæ˜¯webRid
+            // ÓĞÁ½ÖÖroomId£¬Ò»ÖÖÊÇwebRid£¬Ò»ÖÖÊÇroomId
+            // roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId
+            // roomIdÒ»°ã³¤¶ÈÎª19Î»£¬ÀıÈç£º7376429659866598196
+            // webRidÊÇ¹Ì¶¨µÄ£¬ÓÃ»§Ã¿´Î¿ª²¥¶¼ÊÇÍ¬Ò»¸öwebRid
+            // webRidÒ»°ã³¤¶ÈÎª11-12Î»£¬ÀıÈç£º416144012050
+            // ÕâÀï¼òµ¥½øĞĞÅĞ¶Ï£¬Èç¹ûroomId³¤¶ÈĞ¡ÓÚ15£¬ÔòÈÏÎªÊÇwebRid
             if (roomId.ToString().Length <= 16)
             {
                 var webRid = roomId as string;
@@ -263,34 +263,34 @@ namespace AllLive.Core
             return await GetRoomDetailByRoomID(roomId as string);
         }
         /// <summary>
-        /// é€šè¿‡RoomIdè·å–ç›´æ’­é—´è¯¦æƒ…
+        /// Í¨¹ıRoomId»ñÈ¡Ö±²¥¼äÏêÇé
         /// </summary>
         /// <param name="roomId">
-        /// roomIdæ˜¯ä¸€æ¬¡æ€§çš„ï¼Œç”¨æˆ·æ¯æ¬¡é‡æ–°å¼€æ’­éƒ½ä¼šç”Ÿæˆä¸€ä¸ªæ–°çš„roomIdã€‚
-        /// roomIdä¸€èˆ¬é•¿åº¦ä¸º19ä½ï¼Œä¾‹å¦‚ï¼š7376429659866598196
+        /// roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId¡£
+        /// roomIdÒ»°ã³¤¶ÈÎª19Î»£¬ÀıÈç£º7376429659866598196
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByRoomID(string roomId)
         {
             var roomData = await GetRoomDataByRoomID(roomId);
-            // é€šè¿‡æˆ¿é—´ä¿¡æ¯è·å–WebRid
+            // Í¨¹ı·¿¼äĞÅÏ¢»ñÈ¡WebRid
             var webRid = roomData["data"]["room"]["owner"]["web_rid"].ToString();
-            // è¯»å–ç”¨æˆ·å”¯ä¸€IDï¼Œç”¨äºå¼¹å¹•è¿æ¥
-            // ä¼¼ä¹è¿™ä¸ªå‚æ•°ä¸æ˜¯å¿…é¡»çš„ï¼Œå…ˆéšæœºç”Ÿæˆä¸€ä¸ª
+            // ¶ÁÈ¡ÓÃ»§Î¨Ò»ID£¬ÓÃÓÚµ¯Ä»Á¬½Ó
+            // ËÆºõÕâ¸ö²ÎÊı²»ÊÇ±ØĞëµÄ£¬ÏÈËæ»úÉú³ÉÒ»¸ö
             //var userUniqueId = await GetUserUniqueId(webRid);
             var userUniqueId = GenerateRandomNumber(12).ToString();
             var room = roomData["data"]["room"];
             var owner = room["owner"];
             var status = room["status"].ToObject<int>();
-            // roomIdæ˜¯ä¸€æ¬¡æ€§çš„ï¼Œç”¨æˆ·æ¯æ¬¡é‡æ–°å¼€æ’­éƒ½ä¼šç”Ÿæˆä¸€ä¸ªæ–°çš„roomId
-            // æ‰€ä»¥å¦‚æœroomIdå¯¹åº”çš„ç›´æ’­é—´çŠ¶æ€ä¸æ˜¯ç›´æ’­ä¸­ï¼Œå°±é€šè¿‡webRidè·å–ç›´æ’­é—´ä¿¡æ¯
+            // roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId
+            // ËùÒÔÈç¹ûroomId¶ÔÓ¦µÄÖ±²¥¼ä×´Ì¬²»ÊÇÖ±²¥ÖĞ£¬¾ÍÍ¨¹ıwebRid»ñÈ¡Ö±²¥¼äĞÅÏ¢
             if (status == 4)
             {
                 var result = await GetRoomDetailByWebRid(webRid);
                 return result;
             }
             var roomStatus = status == 2;
-            // ä¸»è¦æ˜¯ä¸ºäº†è·å–cookie,ç”¨äºå¼¹å¹•websocketè¿æ¥
+            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -319,11 +319,11 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// é€šè¿‡webRidè·å–ç›´æ’­é—´è¯¦æƒ…
+        /// Í¨¹ıwebRid»ñÈ¡Ö±²¥¼äÏêÇé
         /// </summary>
         /// <param name="webRid">
-        /// webRidæ˜¯å›ºå®šçš„ï¼Œç”¨æˆ·æ¯æ¬¡å¼€æ’­éƒ½æ˜¯åŒä¸€ä¸ªwebRid
-        /// webRidä¸€èˆ¬é•¿åº¦ä¸º11-12ä½ï¼Œä¾‹å¦‚ï¼š416144012050
+        /// webRidÊÇ¹Ì¶¨µÄ£¬ÓÃ»§Ã¿´Î¿ª²¥¶¼ÊÇÍ¬Ò»¸öwebRid
+        /// webRidÒ»°ã³¤¶ÈÎª11-12Î»£¬ÀıÈç£º416144012050
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByWebRid(string webRid)
@@ -335,44 +335,44 @@ namespace AllLive.Core
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
             }
             return await GetRoomDetailByWebRidHtml(webRid);
         }
 
         private async Task<LiveRoomDetail> GetRoomDetailByWebRidApi(string webRid)
         {
-            Debug.WriteLine($"========== GetRoomDetailByWebRidApi å¼€å§‹ ==========");
-            Debug.WriteLine($"[RoomDetail] webRid={webRid}");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ¿ªÊ¼ ==========");
+            Trace.WriteLine($"[RoomDetail] webRid={webRid}");
             
-            // è¯»å–æˆ¿é—´ä¿¡æ¯
+            // ¶ÁÈ¡·¿¼äĞÅÏ¢
             //var data = await _getRoomDataByApi(webRid);
             var data = await GetRoomDataApi(webRid);
             var roomData = data["data"][0];
 
             var userData = data["user"];
             var roomId = roomData["id_str"].ToString();
-            Debug.WriteLine($"[RoomDetail] roomId={roomId}");
+            Trace.WriteLine($"[RoomDetail] roomId={roomId}");
 
-            // è¯»å–ç”¨æˆ·å”¯ä¸€IDï¼Œç”¨äºå¼¹å¹•è¿æ¥
-            // ä¼¼ä¹è¿™ä¸ªå‚æ•°ä¸æ˜¯å¿…é¡»çš„ï¼Œå…ˆéšæœºç”Ÿæˆä¸€ä¸ª
+            // ¶ÁÈ¡ÓÃ»§Î¨Ò»ID£¬ÓÃÓÚµ¯Ä»Á¬½Ó
+            // ËÆºõÕâ¸ö²ÎÊı²»ÊÇ±ØĞëµÄ£¬ÏÈËæ»úÉú³ÉÒ»¸ö
             //var userUniqueId = await GetUserUniqueId(webRid);
             var userUniqueId = GenerateRandomNumber(12).ToString();
-            Debug.WriteLine($"[RoomDetail] userUniqueId={userUniqueId}");
+            Trace.WriteLine($"[RoomDetail] userUniqueId={userUniqueId}");
 
             var owner = roomData["owner"];
 
             var roomStatus = roomData["status"].ToObject<int>() == 2;
-            Debug.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
+            Trace.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
 
-            // ä¸»è¦æ˜¯ä¸ºäº†è·å–cookie,ç”¨äºå¼¹å¹•websocketè¿æ¥
-            Debug.WriteLine($"[RoomDetail] è·å–Cookie (forceRefresh=true)...");
+            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
+            Trace.WriteLine($"[RoomDetail] »ñÈ¡Cookie (forceRefresh=true)...");
             var headers = await GetRequestHeaders(forceRefresh: true);
             var cookie = headers.ContainsKey("Cookie") ? headers["Cookie"] : "";
-            Debug.WriteLine($"[RoomDetail] Cookieé•¿åº¦={cookie.Length}");
-            Debug.WriteLine($"[RoomDetail] Cookieé¢„è§ˆ={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
+            Trace.WriteLine($"[RoomDetail] Cookie³¤¶È={cookie.Length}");
+            Trace.WriteLine($"[RoomDetail] CookieÔ¤ÀÀ={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
             
-            Debug.WriteLine($"========== GetRoomDetailByWebRidApi ç»“æŸ ==========");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ½áÊø ==========");
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -415,7 +415,7 @@ namespace AllLive.Core
             var anchor = roomData["roomStore"]["roomInfo"]["anchor"];
             var roomStatus = room["status"].ToObject<int>() == 2;
 
-            // ä¸»è¦æ˜¯ä¸ºäº†è·å–cookie,ç”¨äºå¼¹å¹•websocketè¿æ¥
+            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -446,9 +446,9 @@ namespace AllLive.Core
             };
         }
         /// <summary>
-        ///  è¿›å…¥ç›´æ’­é—´å‰éœ€è¦å…ˆè·å–cookie
+        ///  ½øÈëÖ±²¥¼äÇ°ĞèÒªÏÈ»ñÈ¡cookie
         /// </summary>
-        /// <param name="webRid">ç›´æ’­é—´RID</param>
+        /// <param name="webRid">Ö±²¥¼äRID</param>
         /// <returns></returns>
         private async Task<string> GetWebCookie(string webRid)
         {
@@ -468,8 +468,8 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// è¯»å–ç”¨æˆ·çš„å”¯ä¸€ID
-        /// æš‚æ—¶æ— ç”¨
+        /// ¶ÁÈ¡ÓÃ»§µÄÎ¨Ò»ID
+        /// ÔİÊ±ÎŞÓÃ
         /// </summary>
         /// <param name="webRid"></param>
         /// <returns></returns>
@@ -496,7 +496,7 @@ namespace AllLive.Core
             string json = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(json))
             {
-                throw new Exception("æ— æ³•è¯»å–ç›´æ’­é—´æ•°æ®");
+                throw new Exception("ÎŞ·¨¶ÁÈ¡Ö±²¥¼äÊı¾İ");
             }
             json = json.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
             return JObject.Parse(json)["state"];
@@ -641,8 +641,8 @@ namespace AllLive.Core
 
         public async Task<LiveSearchResult> Search(string keyword, int page = 1)
         {
-            Debug.WriteLine($"========== Douyin.Search å¼€å§‹ ==========");
-            Debug.WriteLine($"[Search] keyword={keyword}, page={page}");
+            Trace.WriteLine($"========== Douyin.Search ¿ªÊ¼ ==========");
+            Trace.WriteLine($"[Search] keyword={keyword}, page={page}");
             var query = new Dictionary<string, string>
             {
                 { "device_platform", "webapp" },
@@ -681,13 +681,13 @@ namespace AllLive.Core
             };
 
             var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
-            Debug.WriteLine($"[Search] åŸå§‹URL: {TruncateForLog(requestUrl, 150)}");
+            Trace.WriteLine($"[Search] Ô­Ê¼URL: {TruncateForLog(requestUrl, 150)}");
             
             requestUrl = await GetABougs(requestUrl);
-            Debug.WriteLine($"[Search] ç­¾ååURL: {TruncateForLog(requestUrl, 200)}");
+            Trace.WriteLine($"[Search] Ç©ÃûºóURL: {TruncateForLog(requestUrl, 200)}");
             
             var cookie = (await GetRequestHeaders(forceRefresh: true))["Cookie"];
-            Debug.WriteLine($"[Search] Cookie: {TruncateForLog(cookie, 100)}");
+            Trace.WriteLine($"[Search] Cookie: {TruncateForLog(cookie, 100)}");
             var searchHeaders = new Dictionary<string, string>
             {
                 { "authority", "www.douyin.com" },
@@ -705,14 +705,14 @@ namespace AllLive.Core
                 { "user-agent", USER_AGENT }
             };
 
-            Debug.WriteLine($"[Search] å¼€å§‹è¯·æ±‚...");
+            Trace.WriteLine($"[Search] ¿ªÊ¼ÇëÇó...");
             var resp = await HttpUtil.GetString(requestUrl, searchHeaders);
-            Debug.WriteLine($"[Search] å“åº”é•¿åº¦: {resp?.Length ?? 0}");
-            Debug.WriteLine($"[Search] å“åº”é¢„è§ˆ: {TruncateForLog(resp, 300)}");
+            Trace.WriteLine($"[Search] ÏìÓ¦³¤¶È: {resp?.Length ?? 0}");
+            Trace.WriteLine($"[Search] ÏìÓ¦Ô¤ÀÀ: {TruncateForLog(resp, 300)}");
 
             if (string.IsNullOrWhiteSpace(resp))
             {
-                Debug.WriteLine("[Search] é”™è¯¯: å“åº”ä¸ºç©º");
+                Trace.WriteLine("[Search] ´íÎó: ÏìÓ¦Îª¿Õ");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -727,8 +727,8 @@ namespace AllLive.Core
             }
             catch (Exception parseEx)
             {
-                Debug.WriteLine($"[Search] JSONè§£æå¤±è´¥: {parseEx.Message}");
-                Debug.WriteLine($"[Search] åŸå§‹å“åº”: {TruncateForLog(resp)}");
+                Trace.WriteLine($"[Search] JSON½âÎöÊ§°Ü: {parseEx.Message}");
+                Trace.WriteLine($"[Search] Ô­Ê¼ÏìÓ¦: {TruncateForLog(resp)}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -738,7 +738,7 @@ namespace AllLive.Core
 
             var statusCode = json["status_code"]?.ToObject<int?>() ?? 0;
             var statusMsg = json["status_msg"]?.ToString();
-            Debug.WriteLine($"[Search] APIçŠ¶æ€: code={statusCode}, msg={statusMsg}");
+            Trace.WriteLine($"[Search] API×´Ì¬: code={statusCode}, msg={statusMsg}");
 
             var dataToken = json["data"];
             JArray livesArray = dataToken as JArray;
@@ -749,8 +749,8 @@ namespace AllLive.Core
 
             if (livesArray == null)
             {
-                Debug.WriteLine("[Search] é”™è¯¯: æ•°æ®ç»“æ„å¼‚å¸¸ï¼Œæ‰¾ä¸åˆ°ç›´æ’­åˆ—è¡¨");
-                Debug.WriteLine($"[Search] JSONç»“æ„: {TruncateForLog(json.ToString(Formatting.None))}");
+                Trace.WriteLine("[Search] ´íÎó: Êı¾İ½á¹¹Òì³££¬ÕÒ²»µ½Ö±²¥ÁĞ±í");
+                Trace.WriteLine($"[Search] JSON½á¹¹: {TruncateForLog(json.ToString(Formatting.None))}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -758,7 +758,7 @@ namespace AllLive.Core
                 };
             }
 
-            Debug.WriteLine($"[Search] æ‰¾åˆ° {livesArray.Count} æ¡æ•°æ®");
+            Trace.WriteLine($"[Search] ÕÒµ½ {livesArray.Count} ÌõÊı¾İ");
             var items = new List<LiveRoomItem>();
             foreach (var item in livesArray)
             {
@@ -786,8 +786,8 @@ namespace AllLive.Core
             var hasMoreToken = (dataToken as JObject)?["has_more"];
             var hasMore = hasMoreToken?.ToObject<int?>() == 1 || items.Count >= 10;
 
-            Debug.WriteLine($"[Search] è§£æå®Œæˆ: æœ‰æ•ˆç»“æœ={items.Count}, hasMore={hasMore}");
-            Debug.WriteLine($"========== Douyin.Search ç»“æŸ ==========");
+            Trace.WriteLine($"[Search] ½âÎöÍê³É: ÓĞĞ§½á¹û={items.Count}, hasMore={hasMore}");
+            Trace.WriteLine($"========== Douyin.Search ½áÊø ==========");
             return new LiveSearchResult()
             {
                 HasMore = hasMore,
@@ -820,7 +820,7 @@ namespace AllLive.Core
             var sb = new StringBuilder();
             for (int i = 0; i < length; i++)
             {
-                // ç¬¬ä¸€ä½ä¸èƒ½ä¸º0
+                // µÚÒ»Î»²»ÄÜÎª0
                 if (i == 0)
                 {
                     sb.Append(random.Next(1, 9));
@@ -835,7 +835,7 @@ namespace AllLive.Core
 
         private async Task<string> GetABougs(string url)
         {
-            Debug.WriteLine($"[GetABougs] å¼€å§‹ç”Ÿæˆç­¾å");
+            Trace.WriteLine($"[GetABougs] ¿ªÊ¼Éú³ÉÇ©Ãû");
             try
             {
                 var uri = new Uri(url);
@@ -846,18 +846,18 @@ namespace AllLive.Core
                     ? $"msToken={msToken}"
                     : $"{rawQuery}&msToken={msToken}";
 
-                Debug.WriteLine($"[GetABougs] queryForSigné•¿åº¦={queryForSign.Length}");
-                Debug.WriteLine($"[GetABougs] è°ƒç”¨ DouyinABogusHelper.GenerateAsync...");
+                Trace.WriteLine($"[GetABougs] queryForSign³¤¶È={queryForSign.Length}");
+                Trace.WriteLine($"[GetABougs] µ÷ÓÃ DouyinABogusHelper.GenerateAsync...");
                 
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
                 
-                Debug.WriteLine($"[GetABougs] a_bogusç»“æœ: '{aBogus}'");
-                Debug.WriteLine($"[GetABougs] a_bogusé•¿åº¦: {aBogus?.Length ?? 0}");
-                Debug.WriteLine($"[GetABougs] a_bogusæ˜¯å¦ä¸ºç©º: {string.IsNullOrEmpty(aBogus)}");
+                Trace.WriteLine($"[GetABougs] a_bogus½á¹û: '{aBogus}'");
+                Trace.WriteLine($"[GetABougs] a_bogus³¤¶È: {aBogus?.Length ?? 0}");
+                Trace.WriteLine($"[GetABougs] a_bogusÊÇ·ñÎª¿Õ: {string.IsNullOrEmpty(aBogus)}");
                 
                 if (string.IsNullOrEmpty(aBogus))
                 {
-                    Debug.WriteLine("[GetABougs] è­¦å‘Š: a_bogusä¸ºç©ºï¼Œä½¿ç”¨æ— ç­¾åURL");
+                    Trace.WriteLine("[GetABougs] ¾¯¸æ: a_bogusÎª¿Õ£¬Ê¹ÓÃÎŞÇ©ÃûURL");
                     var fallbackQuery = string.IsNullOrEmpty(rawQuery)
                         ? $"msToken={Uri.EscapeDataString(msToken)}"
                         : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}";
@@ -868,13 +868,13 @@ namespace AllLive.Core
                     ? $"msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}"
                     : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}";
 
-                Debug.WriteLine($"[GetABougs] ç­¾åæˆåŠŸ");
+                Trace.WriteLine($"[GetABougs] Ç©Ãû³É¹¦");
                 return $"{baseUrl}?{finalQuery}";
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[GetABougs] å¼‚å¸¸: {ex.Message}");
-                Debug.WriteLine($"[GetABougs] StackTrace: {ex.StackTrace}");
+                Trace.WriteLine($"[GetABougs] Òì³£: {ex.Message}");
+                Trace.WriteLine($"[GetABougs] StackTrace: {ex.StackTrace}");
                 return url;
             }
         }

@@ -44,7 +44,7 @@ namespace AllLive.Core.Helper
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"DouyinSignHelper fallback: {ex}");
+                System.Diagnostics.Trace.WriteLine($"DouyinSignHelper fallback: {ex}");
                 return "00000000";
             }
         }

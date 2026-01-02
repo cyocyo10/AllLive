@@ -1,4 +1,4 @@
-ï»¿using AllLive.Core.Helper;
+using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
@@ -60,20 +60,20 @@ namespace AllLive.Core.Danmaku
         {
             danmakuArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
             
-            Debug.WriteLine($"========== DouyinDanmaku.Start å¼€å§‹ ==========");
-            Debug.WriteLine($"[Danmaku] RoomId={danmakuArgs.RoomId}");
-            Debug.WriteLine($"[Danmaku] WebRid={danmakuArgs.WebRid}");
-            Debug.WriteLine($"[Danmaku] UserId={danmakuArgs.UserId}");
-            Debug.WriteLine($"[Danmaku] Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(80, danmakuArgs.Cookie?.Length ?? 0))}...");
-            Debug.WriteLine($"[Danmaku] isStopping(ä¹‹å‰)={isStopping}");
-            Debug.WriteLine($"[Danmaku] reconnectAttempts(ä¹‹å‰)={reconnectAttempts}");
-            Debug.WriteLine($"[Danmaku] wsæ˜¯å¦ä¸ºnull(ä¹‹å‰)={ws == null}");
+            Trace.WriteLine($"========== DouyinDanmaku.Start ¿ªÊ¼ ==========");
+            Trace.WriteLine($"[Danmaku] RoomId={danmakuArgs.RoomId}");
+            Trace.WriteLine($"[Danmaku] WebRid={danmakuArgs.WebRid}");
+            Trace.WriteLine($"[Danmaku] UserId={danmakuArgs.UserId}");
+            Trace.WriteLine($"[Danmaku] Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(80, danmakuArgs.Cookie?.Length ?? 0))}...");
+            Trace.WriteLine($"[Danmaku] isStopping(Ö®Ç°)={isStopping}");
+            Trace.WriteLine($"[Danmaku] reconnectAttempts(Ö®Ç°)={reconnectAttempts}");
+            Trace.WriteLine($"[Danmaku] wsÊÇ·ñÎªnull(Ö®Ç°)={ws == null}");
             
             isStopping = false;
             reconnectAttempts = 0;
             useBackupEndpoint = false;
             CancelReconnect();
-            Debug.WriteLine($"[Danmaku] çŠ¶æ€å·²é‡ç½®: isStopping={isStopping}, reconnectAttempts={reconnectAttempts}");
+            Trace.WriteLine($"[Danmaku] ×´Ì¬ÒÑÖØÖÃ: isStopping={isStopping}, reconnectAttempts={reconnectAttempts}");
             
             var ts = Utils.GetTimestampMs();
             var query = new Dictionary<string, string>()
@@ -112,20 +112,20 @@ namespace AllLive.Core.Danmaku
         };
 
             var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
-            Debug.WriteLine($"[Danmaku] ç­¾åç»“æœ: {sign}");
+            Trace.WriteLine($"[Danmaku] Ç©Ãû½á¹û: {sign}");
             query.Add("signature", sign);
 
-            // å°†å‚æ•°æ‹¼æ¥åˆ°url
+            // ½«²ÎÊıÆ´½Óµ½url
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
             ServerUrl = url;
             BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
-            Debug.WriteLine($"[Danmaku] WebSocket URL: {url.Substring(0, Math.Min(150, url.Length))}...");
-            Debug.WriteLine($"[Danmaku] å¼€å§‹è¿æ¥WebSocket...");
+            Trace.WriteLine($"[Danmaku] WebSocket URL: {url.Substring(0, Math.Min(150, url.Length))}...");
+            Trace.WriteLine($"[Danmaku] ¿ªÊ¼Á¬½ÓWebSocket...");
             await ConnectAsync(useBackup: false);
         }
         private async void Ws_OnOpen(object sender, EventArgs e)
         {
-            Debug.WriteLine($"[Danmaku] âœ“ WebSocketè¿æ¥æˆåŠŸ!");
+            Trace.WriteLine($"[Danmaku] ? WebSocketÁ¬½Ó³É¹¦!");
             reconnectAttempts = 0;
             useBackupEndpoint = false;
             CancelReconnect();
@@ -134,7 +134,7 @@ namespace AllLive.Core.Danmaku
                 SendHeartBeatData();
             });
             timer?.Start();
-            Debug.WriteLine($"[Danmaku] å¿ƒè·³å®šæ—¶å™¨å·²å¯åŠ¨");
+            Trace.WriteLine($"[Danmaku] ĞÄÌø¶¨Ê±Æ÷ÒÑÆô¶¯");
         }
 
         private async void Ws_OnMessage(object sender, MessageEventArgs e)
@@ -170,7 +170,7 @@ namespace AllLive.Core.Danmaku
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
             }
         }
         private void UnPackWebcastChatMessage(byte[] payload)
@@ -188,7 +188,7 @@ namespace AllLive.Core.Danmaku
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
             }
         }
 
@@ -209,30 +209,30 @@ namespace AllLive.Core.Danmaku
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
             }
 
         }
         private void Ws_OnClose(object sender, CloseEventArgs e)
         {
-            Debug.WriteLine($"[Danmaku] âœ— WebSocketå…³é—­: Code={e.Code}, Reason={e.Reason}");
-            Debug.WriteLine($"[Danmaku] isStopping={isStopping}");
+            Trace.WriteLine($"[Danmaku] ? WebSocket¹Ø±Õ: Code={e.Code}, Reason={e.Reason}");
+            Trace.WriteLine($"[Danmaku] isStopping={isStopping}");
             if (isStopping)
             {
-                Debug.WriteLine($"[Danmaku] æ­£åœ¨åœæ­¢ä¸­ï¼Œå¿½ç•¥å…³é—­äº‹ä»¶");
+                Trace.WriteLine($"[Danmaku] ÕıÔÚÍ£Ö¹ÖĞ£¬ºöÂÔ¹Ø±ÕÊÂ¼ş");
                 return;
             }
 
-            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "æœåŠ¡å™¨è¿æ¥å·²å…³é—­" : e.Reason);
+            HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "·şÎñÆ÷Á¬½ÓÒÑ¹Ø±Õ" : e.Reason);
         }
 
         private void Ws_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
         {
-            Debug.WriteLine($"[Danmaku] âœ— WebSocketé”™è¯¯: {e.Message}");
-            Debug.WriteLine($"[Danmaku] isStopping={isStopping}");
+            Trace.WriteLine($"[Danmaku] ? WebSocket´íÎó: {e.Message}");
+            Trace.WriteLine($"[Danmaku] isStopping={isStopping}");
             if (isStopping)
             {
-                Debug.WriteLine($"[Danmaku] æ­£åœ¨åœæ­¢ä¸­ï¼Œå¿½ç•¥é”™è¯¯äº‹ä»¶");
+                Trace.WriteLine($"[Danmaku] ÕıÔÚÍ£Ö¹ÖĞ£¬ºöÂÔ´íÎóÊÂ¼ş");
                 return;
             }
 
@@ -252,22 +252,22 @@ namespace AllLive.Core.Danmaku
 
         public async Task Stop()
         {
-            Debug.WriteLine($"========== DouyinDanmaku.Stop å¼€å§‹ ==========");
-            Debug.WriteLine($"[Danmaku] è®¾ç½® isStopping=true");
+            Trace.WriteLine($"========== DouyinDanmaku.Stop ¿ªÊ¼ ==========");
+            Trace.WriteLine($"[Danmaku] ÉèÖÃ isStopping=true");
             isStopping = true;
             CancelReconnect();
             await Task.Run(() =>
             {
                 lock (connectionLock)
                 {
-                    Debug.WriteLine($"[Danmaku] æ¸…ç†WebSocketè¿æ¥...");
+                    Trace.WriteLine($"[Danmaku] ÇåÀíWebSocketÁ¬½Ó...");
                     reconnectAttempts = 0;
                     useBackupEndpoint = false;
                     CleanupWebSocket();
-                    Debug.WriteLine($"[Danmaku] WebSocketå·²æ¸…ç†");
+                    Trace.WriteLine($"[Danmaku] WebSocketÒÑÇåÀí");
                 }
             });
-            Debug.WriteLine($"========== DouyinDanmaku.Stop ç»“æŸ ==========");
+            Trace.WriteLine($"========== DouyinDanmaku.Stop ½áÊø ==========");
         }
         private void SendHeartBeatData()
         {
@@ -344,11 +344,11 @@ namespace AllLive.Core.Danmaku
         }
 
         /// <summary>
-        /// è·å–Websocketç­¾å
-        /// æœåŠ¡ç«¯ä»£ç ï¼šhttps://github.com/lovelyyoshino/douyin_python
+        /// »ñÈ¡WebsocketÇ©Ãû
+        /// ·şÎñ¶Ë´úÂë£ºhttps://github.com/lovelyyoshino/douyin_python
         /// </summary>
-        /// <param name="roomId">æˆ¿é—´ID</param>
-        /// <param name="uniqueId">ç”¨æˆ·å”¯ä¸€ID</param>
+        /// <param name="roomId">·¿¼äID</param>
+        /// <param name="uniqueId">ÓÃ»§Î¨Ò»ID</param>
         /// <returns></returns>
         private async Task<string> DefaultSignatureProvider(string roomId, string uniqueId)
         {
@@ -367,8 +367,8 @@ namespace AllLive.Core.Danmaku
         private async Task ConnectAsync(bool useBackup)
         {
             var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
-            Debug.WriteLine($"[Danmaku] ConnectAsync: useBackup={useBackup}");
-            Debug.WriteLine($"[Danmaku] ç›®æ ‡URL: {targetUrl?.Substring(0, Math.Min(100, targetUrl?.Length ?? 0))}...");
+            Trace.WriteLine($"[Danmaku] ConnectAsync: useBackup={useBackup}");
+            Trace.WriteLine($"[Danmaku] Ä¿±êURL: {targetUrl?.Substring(0, Math.Min(100, targetUrl?.Length ?? 0))}...");
 
             await Task.Run(() =>
             {
@@ -376,11 +376,11 @@ namespace AllLive.Core.Danmaku
                 {
                     lock (connectionLock)
                     {
-                        Debug.WriteLine($"[Danmaku] è¿›å…¥connectionLock");
-                        Debug.WriteLine($"[Danmaku] æ¸…ç†æ—§è¿æ¥...");
+                        Trace.WriteLine($"[Danmaku] ½øÈëconnectionLock");
+                        Trace.WriteLine($"[Danmaku] ÇåÀí¾ÉÁ¬½Ó...");
                         CleanupWebSocket();
 
-                        Debug.WriteLine($"[Danmaku] åˆ›å»ºæ–°WebSocket...");
+                        Trace.WriteLine($"[Danmaku] ´´½¨ĞÂWebSocket...");
                         ws = new WebSocket(targetUrl);
                         ws.CustomHeaders = new Dictionary<string, string>()
                         {
@@ -403,15 +403,15 @@ namespace AllLive.Core.Danmaku
                         };
                         timer.Elapsed += Timer_Elapsed;
 
-                        Debug.WriteLine($"[Danmaku] è°ƒç”¨ws.Connect()...");
+                        Trace.WriteLine($"[Danmaku] µ÷ÓÃws.Connect()...");
                         ws.Connect();
-                        Debug.WriteLine($"[Danmaku] ws.Connect()è¿”å›, ws.ReadyState={ws.ReadyState}");
+                        Trace.WriteLine($"[Danmaku] ws.Connect()·µ»Ø, ws.ReadyState={ws.ReadyState}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[Danmaku] ConnectAsyncå¼‚å¸¸: {ex.Message}");
-                    Debug.WriteLine($"[Danmaku] StackTrace: {ex.StackTrace}");
+                    Trace.WriteLine($"[Danmaku] ConnectAsyncÒì³£: {ex.Message}");
+                    Trace.WriteLine($"[Danmaku] StackTrace: {ex.StackTrace}");
                     CleanupWebSocket();
                     HandleConnectionFailure(ex.Message);
                 }
@@ -420,7 +420,7 @@ namespace AllLive.Core.Danmaku
 
         private void CleanupWebSocket()
         {
-            Debug.WriteLine($"[Danmaku] CleanupWebSocket: wsæ˜¯å¦ä¸ºnull={ws == null}, timeræ˜¯å¦ä¸ºnull={timer == null}");
+            Trace.WriteLine($"[Danmaku] CleanupWebSocket: wsÊÇ·ñÎªnull={ws == null}, timerÊÇ·ñÎªnull={timer == null}");
             if (ws != null)
             {
                 ws.OnOpen -= Ws_OnOpen;
@@ -429,12 +429,12 @@ namespace AllLive.Core.Danmaku
                 ws.OnClose -= Ws_OnClose;
                 try
                 {
-                    Debug.WriteLine($"[Danmaku] å…³é—­WebSocket, ReadyState={ws.ReadyState}");
+                    Trace.WriteLine($"[Danmaku] ¹Ø±ÕWebSocket, ReadyState={ws.ReadyState}");
                     ws.Close();
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[Danmaku] å…³é—­WebSocketå¼‚å¸¸(å¿½ç•¥): {ex.Message}");
+                    Trace.WriteLine($"[Danmaku] ¹Ø±ÕWebSocketÒì³£(ºöÂÔ): {ex.Message}");
                 }
                 ws = null;
             }
@@ -445,35 +445,35 @@ namespace AllLive.Core.Danmaku
                 timer.Stop();
                 timer.Dispose();
                 timer = null;
-                Debug.WriteLine($"[Danmaku] Timerå·²æ¸…ç†");
+                Trace.WriteLine($"[Danmaku] TimerÒÑÇåÀí");
             }
         }
 
         private void HandleConnectionFailure(string reason)
         {
-            Debug.WriteLine($"[Danmaku] HandleConnectionFailure: reason={reason}");
-            Debug.WriteLine($"[Danmaku] reconnectTokenSourceæ˜¯å¦ä¸ºnull={reconnectTokenSource == null}");
+            Trace.WriteLine($"[Danmaku] HandleConnectionFailure: reason={reason}");
+            Trace.WriteLine($"[Danmaku] reconnectTokenSourceÊÇ·ñÎªnull={reconnectTokenSource == null}");
             
             if (reconnectTokenSource != null)
             {
-                Debug.WriteLine($"[Danmaku] å·²æœ‰é‡è¿ä»»åŠ¡åœ¨è¿›è¡Œï¼Œè·³è¿‡");
+                Trace.WriteLine($"[Danmaku] ÒÑÓĞÖØÁ¬ÈÎÎñÔÚ½øĞĞ£¬Ìø¹ı");
                 return;
             }
 
             reconnectAttempts++;
-            Debug.WriteLine($"[Danmaku] é‡è¿æ¬¡æ•°: {reconnectAttempts}/{MaxReconnectAttempts}");
+            Trace.WriteLine($"[Danmaku] ÖØÁ¬´ÎÊı: {reconnectAttempts}/{MaxReconnectAttempts}");
             
             if (reconnectAttempts > MaxReconnectAttempts)
             {
-                Debug.WriteLine($"[Danmaku] è¶…è¿‡æœ€å¤§é‡è¿æ¬¡æ•°ï¼Œæ”¾å¼ƒé‡è¿");
+                Trace.WriteLine($"[Danmaku] ³¬¹ı×î´óÖØÁ¬´ÎÊı£¬·ÅÆúÖØÁ¬");
                 CancelReconnect();
-                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "æœåŠ¡å™¨è¿æ¥å¤±è´¥" : reason);
+                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "·şÎñÆ÷Á¬½ÓÊ§°Ü" : reason);
                 return;
             }
 
-            OnClose?.Invoke(this, $"ä¸æœåŠ¡å™¨æ–­å¼€è¿æ¥ï¼Œæ­£åœ¨å°è¯•é‡è¿({reconnectAttempts}/{MaxReconnectAttempts})");
+            OnClose?.Invoke(this, $"Óë·şÎñÆ÷¶Ï¿ªÁ¬½Ó£¬ÕıÔÚ³¢ÊÔÖØÁ¬({reconnectAttempts}/{MaxReconnectAttempts})");
             useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
-            Debug.WriteLine($"[Danmaku] ä½¿ç”¨å¤‡ç”¨ç«¯ç‚¹: {useBackupEndpoint}");
+            Trace.WriteLine($"[Danmaku] Ê¹ÓÃ±¸ÓÃ¶Ëµã: {useBackupEndpoint}");
             ScheduleReconnect();
         }
 
@@ -521,7 +521,7 @@ namespace AllLive.Core.Danmaku
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex);
+                Trace.WriteLine(ex);
                 return "00000000";
             }
         }

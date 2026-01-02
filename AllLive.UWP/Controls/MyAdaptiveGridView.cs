@@ -1,4 +1,4 @@
-ï»¿using Microsoft.Toolkit.Uwp.UI.Controls;
+using Microsoft.Toolkit.Uwp.UI.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -73,7 +73,7 @@ namespace AllLive.UWP.Controls
         private void MyAdaptiveGridView_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
 
-            Debug.WriteLine("å†…å®¹å˜æ›´");
+            Trace.WriteLine("ÄÚÈİ±ä¸ü");
             if (scrollViewer.ScrollableHeight == 0)
             {
                 LoadMoreCommand?.Execute(null);

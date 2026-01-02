@@ -31,14 +31,14 @@ namespace Tup
 #if DEBUG
             string strTrace = DateTime.Now.Hour.ToString("D2") + ":" + DateTime.Now.Minute.ToString("D2") + ":" + DateTime.Now.Second.ToString("D2") + ":" + DateTime.Now.Millisecond.ToString("D3");
             strTrace += "\t" + value;
-            System.Diagnostics.Debug.WriteLine(strTrace);
+            System.Diagnostics.Trace.WriteLine(strTrace);
 #endif
         }
         static public void Trace(string value, object arg)
         {
 #if DEBUG
             string strTrace = string.Format("{0}{1}", value, arg);
-            System.Diagnostics.Debug.WriteLine(value);
+            System.Diagnostics.Trace.WriteLine(value);
 #endif
         }
         static public string Trace(byte[] value)

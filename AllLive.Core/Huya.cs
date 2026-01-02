@@ -1,4 +1,4 @@
-ï»¿using AllLive.Core.Interface;
+using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace AllLive.Core
 {
     public class Huya : ILiveSite
     {
-        public string Name => "è™ç‰™ç›´æ’­";
+        public string Name => "»¢ÑÀÖ±²¥";
         public ILiveDanmaku GetDanmaku() => new HuyaDanmaku();
 
         private const string kUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -46,10 +46,10 @@ namespace AllLive.Core
         public async Task<List<LiveCategory>> GetCategores()
         {
             List<LiveCategory> categories = new List<LiveCategory>() {
-                new LiveCategory() { ID="1", Name="ç½‘æ¸¸" },
-                new LiveCategory() { ID="2", Name="å•æœº" },
-                new LiveCategory() { ID="8", Name="å¨±ä¹" },
-                new LiveCategory() { ID="3", Name="æ‰‹æ¸¸" },
+                new LiveCategory() { ID="1", Name="ÍøÓÎ" },
+                new LiveCategory() { ID="2", Name="µ¥»ú" },
+                new LiveCategory() { ID="8", Name="ÓéÀÖ" },
+                new LiveCategory() { ID="3", Name="ÊÖÓÎ" },
             };
             foreach (var item in categories)
             {
@@ -151,13 +151,13 @@ namespace AllLive.Core
             var huyaBiterates = new List<HuyaBitRateModel>();
 
             var liveStatus = data["liveStatus"]?.ToString()?.ToUpper();
-            var isLive = liveStatus == "ON"; // åªæœ‰ ON æ‰ç®—æ­£åœ¨ç›´æ’­
+            var isLive = liveStatus == "ON"; // Ö»ÓĞ ON ²ÅËãÕıÔÚÖ±²¥
 
             if (isLive)
             {
                 yySid = profileInfo?["yyid"]?.ToInt64() ?? 0;
 
-                // è·å–æœ‰æ•ˆçº¿è·¯
+                // »ñÈ¡ÓĞĞ§ÏßÂ·
                 var baseSteamInfoList = stream["baseSteamInfoList"] as JArray;
                 if (baseSteamInfoList != null)
                 {
@@ -191,7 +191,7 @@ namespace AllLive.Core
                     }
                 }
 
-                // æ¸…æ™°åº¦
+                // ÇåÎú¶È
                 var bitRateInfoStr = liveData?["bitRateInfo"]?.ToString();
                 JArray biterates = !string.IsNullOrEmpty(bitRateInfoStr)
                     ? JArray.Parse(bitRateInfoStr)
@@ -273,8 +273,8 @@ namespace AllLive.Core
             {
                 urlData.BitRates = new List<HuyaBitRateModel>()
                 {
-                    new HuyaBitRateModel() { Name = "åŸç”»", BitRate = 0 },
-                    new HuyaBitRateModel() { Name = "é«˜æ¸…", BitRate = 2000 },
+                    new HuyaBitRateModel() { Name = "Ô­»­", BitRate = 0 },
+                    new HuyaBitRateModel() { Name = "¸ßÇå", BitRate = 2000 },
                 };
             }
 
@@ -304,7 +304,7 @@ namespace AllLive.Core
 
         private async Task<string> GetPlayUrl(HuyaLineModel line, int bitRate)
         {
-            // å…ˆå°è¯•ç”¨ tup è·å–æ–°çš„ antiCode
+            // ÏÈ³¢ÊÔÓÃ tup »ñÈ¡ĞÂµÄ antiCode
             try
             {
                 var req = new HYGetCdnTokenReq();
@@ -325,7 +325,7 @@ namespace AllLive.Core
             }
             catch { /* fallback to original antiCode */ }
 
-            // fallback: ä½¿ç”¨åŸå§‹çš„ antiCode
+            // fallback: Ê¹ÓÃÔ­Ê¼µÄ antiCode
             var fallbackUrl = line.Line;
             if (!fallbackUrl.StartsWith("http")) fallbackUrl = "https://" + fallbackUrl;
             fallbackUrl = $"{fallbackUrl}/{line.StreamName}.flv?{line.FlvAntiCode}&codec=264";
@@ -349,12 +349,12 @@ namespace AllLive.Core
                 
                 if (result["status"]?.ToInt32() != 200)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus: API returned status {result["status"]} for room {roomId}");
+                    System.Diagnostics.Trace.WriteLine($"Huya.GetLiveStatus: API returned status {result["status"]} for room {roomId}");
                     return LiveStatusType.Offline;
                 }
                 
                 var liveStatus = result["data"]?["liveStatus"]?.ToString()?.ToUpper();
-                System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus: room {roomId} status = {liveStatus}");
+                System.Diagnostics.Trace.WriteLine($"Huya.GetLiveStatus: room {roomId} status = {liveStatus}");
                 
                 switch (liveStatus)
                 {
@@ -368,7 +368,7 @@ namespace AllLive.Core
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus error for room {roomId}: {ex.Message}");
+                System.Diagnostics.Trace.WriteLine($"Huya.GetLiveStatus error for room {roomId}: {ex.Message}");
                 return LiveStatusType.Offline;
             }
         }
