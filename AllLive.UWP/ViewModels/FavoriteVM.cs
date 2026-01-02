@@ -105,8 +105,8 @@ namespace AllLive.UWP.ViewModels
                 {
                     LoaddingLiveStatus = false;
                     loadedCount = 0;
-                    // 排序，直播的在前面
-                    Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => x.LiveStatus));
+                    // 排序：直播 > 回放 > 未直播
+                    Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => (int)x.LiveStatus));
                 }
             }
         }

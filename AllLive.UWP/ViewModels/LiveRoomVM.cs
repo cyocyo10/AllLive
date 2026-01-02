@@ -14,6 +14,7 @@ using Windows.UI.Xaml;
 using Windows.ApplicationModel.Core;
 using System.ComponentModel;
 using System.Timers;
+using System.Collections.Concurrent;
 
 namespace AllLive.UWP.ViewModels
 {
@@ -22,6 +23,13 @@ namespace AllLive.UWP.ViewModels
         SettingVM settingVM;
         public event EventHandler<string> ChangedPlayUrl;
         public event EventHandler<LiveMessage> AddDanmaku;
+
+        // 弹幕消息队列和批量处理
+        private readonly ConcurrentQueue<LiveMessage> _messageQueue = new ConcurrentQueue<LiveMessage>();
+        private Timer _messageProcessTimer;
+        private const int MESSAGE_BATCH_INTERVAL = 100; // 100ms 处理一批
+        private const int MESSAGE_BATCH_SIZE = 10; // 每批最多处理10条
+
         public LiveRoomVM(SettingVM settingVM)
         {
             this.settingVM = settingVM;
@@ -32,6 +40,10 @@ namespace AllLive.UWP.ViewModels
             AddFavoriteCommand = new RelayCommand(AddFavorite);
             RemoveFavoriteCommand = new RelayCommand(RemoveFavorite);
 
+            // 初始化消息批量处理定时器
+            _messageProcessTimer = new Timer(MESSAGE_BATCH_INTERVAL);
+            _messageProcessTimer.Elapsed += ProcessMessageQueue;
+            _messageProcessTimer.AutoReset = true;
         }
         public ICommand AddFavoriteCommand { get; set; }
         public ICommand RemoveFavoriteCommand { get; set; }
@@ -261,6 +273,7 @@ namespace AllLive.UWP.ViewModels
 
                 LiveDanmaku.NewMessage += LiveDanmaku_NewMessage;
                 LiveDanmaku.OnClose += LiveDanmaku_OnClose;
+                _messageProcessTimer.Start();
                 await LiveDanmaku.Start(result.DanmakuData);
                 if (detail.Status)
                 {
@@ -444,44 +457,79 @@ namespace AllLive.UWP.ViewModels
             });
         }
         public CoreDispatcher Dispatcher { get; set; }
-        private async void LiveDanmaku_NewMessage(object sender, LiveMessage e)
+
+        private void ProcessMessageQueue(object sender, ElapsedEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            if (_messageQueue.IsEmpty) return;
+
+            var messagesToProcess = new List<LiveMessage>();
+            for (int i = 0; i < MESSAGE_BATCH_SIZE && _messageQueue.TryDequeue(out var msg); i++)
             {
-                if (e.Type == LiveMessageType.Online)
+                messagesToProcess.Add(msg);
+            }
+
+            if (messagesToProcess.Count == 0) return;
+
+            _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                foreach (var msg in messagesToProcess)
                 {
-                    Online = Convert.ToInt64(e.Data);
-                    return;
-                }
-                if (e.Type == LiveMessageType.SuperChat)
-                {
-                    SuperChatMessages.Insert(0, new SuperChatItem(e.Data as LiveSuperChatMessage, KeepSC ? false : true));
-                    return;
-                }
-                if (e.Type == LiveMessageType.Chat)
-                {
-                    if (Messages.Count >= MessageCleanCount)
+                    // 清理旧消息
+                    while (Messages.Count >= MessageCleanCount)
                     {
                         Messages.RemoveAt(0);
-                        //Messages.Clear();
-                    }
-                    if (settingVM.ShieldWords != null && settingVM.ShieldWords.Count > 0)
-                    {
-                        if (settingVM.ShieldWords.FirstOrDefault(x => e.Message.Contains(x)) != null) return;
-                    }
-                    if (!Utils.IsXbox)
-                    {
-                        Messages.Add(e);
                     }
 
-                    AddDanmaku?.Invoke(this, e);
-                    return;
+                    if (!Utils.IsXbox)
+                    {
+                        Messages.Add(msg);
+                    }
+
+                    AddDanmaku?.Invoke(this, msg);
                 }
             });
         }
 
+        private void LiveDanmaku_NewMessage(object sender, LiveMessage e)
+        {
+            // Online 和 SuperChat 立即处理
+            if (e.Type == LiveMessageType.Online)
+            {
+                _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    Online = Convert.ToInt64(e.Data);
+                });
+                return;
+            }
+
+            if (e.Type == LiveMessageType.SuperChat)
+            {
+                _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    SuperChatMessages.Insert(0, new SuperChatItem(e.Data as LiveSuperChatMessage, KeepSC ? false : true));
+                });
+                return;
+            }
+
+            if (e.Type == LiveMessageType.Chat)
+            {
+                // 屏蔽词过滤在入队前处理
+                if (settingVM.ShieldWords != null && settingVM.ShieldWords.Count > 0)
+                {
+                    if (settingVM.ShieldWords.FirstOrDefault(x => e.Message.Contains(x)) != null) return;
+                }
+
+                // 普通弹幕加入队列批量处理
+                _messageQueue.Enqueue(e);
+                return;
+            }
+        }
+
         public async void Stop()
         {
+            _messageProcessTimer?.Stop();
+            // 清空消息队列
+            while (_messageQueue.TryDequeue(out _)) { }
             Messages.Clear();
             if (LiveDanmaku != null)
             {

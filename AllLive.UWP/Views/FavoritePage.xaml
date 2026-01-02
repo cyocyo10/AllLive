@@ -100,7 +100,7 @@
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center"
                                 Orientation="Horizontal"
-                                Visibility="{x:Bind Path=LiveStatus, Mode=OneWay}">
+                                Visibility="{x:Bind Path=IsLive, Mode=OneWay}">
                                 <Ellipse
                                     Width="8"
                                     Height="8"
@@ -111,8 +111,26 @@
                                     VerticalAlignment="Center"
                                     FontSize="12"
                                     Foreground="Green"
-                                    Text="直播中"
-                                    Visibility="{x:Bind Path=LiveStatus, Mode=OneWay}" />
+                                    Text="直播中" />
+                            </StackPanel>
+                            <StackPanel
+                                Grid.ColumnSpan="2"
+                                Margin="4"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Visibility="{x:Bind Path=IsReplay, Mode=OneWay}">
+                                <Ellipse
+                                    Width="8"
+                                    Height="8"
+                                    Margin="0,0,4,0"
+                                    VerticalAlignment="Center"
+                                    Fill="Orange" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    Foreground="Orange"
+                                    Text="回放中" />
                             </StackPanel>
 
                         </Grid>

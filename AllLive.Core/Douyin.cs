@@ -35,9 +35,9 @@ namespace AllLive.Core
             { "Authority", AUTHORITY }
         };
 
-        private async Task<Dictionary<string, string>> GetRequestHeaders()
+        private async Task<Dictionary<string, string>> GetRequestHeaders(bool forceRefresh = false)
         {
-            if (headers.ContainsKey("Cookie") || headers.ContainsKey("cookie"))
+            if (!forceRefresh && (headers.ContainsKey("Cookie") || headers.ContainsKey("cookie")))
             {
                 return headers;
             }
@@ -275,7 +275,7 @@ namespace AllLive.Core
             }
             var roomStatus = status == 2;
             // 主要是为了获取cookie,用于弹幕websocket连接
-            var headers = await GetRequestHeaders();
+            var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -344,7 +344,7 @@ namespace AllLive.Core
             var roomStatus = roomData["status"].ToObject<int>() == 2;
 
             // 主要是为了获取cookie,用于弹幕websocket连接
-            var headers = await GetRequestHeaders();
+            var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -388,7 +388,7 @@ namespace AllLive.Core
             var roomStatus = room["status"].ToObject<int>() == 2;
 
             // 主要是为了获取cookie,用于弹幕websocket连接
-            var headers = await GetRequestHeaders();
+            var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -619,12 +619,12 @@ namespace AllLive.Core
                 { "aid", "6383" },
                 { "channel", "channel_pc_web" },
                 { "search_channel", "aweme_live" },
-                { "keyword", keyword },  // 动态值
+                { "keyword", keyword },
                 { "search_source", "switch_tab" },
                 { "query_correct_type", "1" },
                 { "is_filter_search", "0" },
                 { "from_group_id", "" },
-                { "offset", ((page - 1) * 10).ToString() },  // 动态计算值
+                { "offset", ((page - 1) * 10).ToString() },
                 { "count", "10" },
                 { "pc_client_type", "1" },
                 { "version_code", "170400" },
@@ -652,15 +652,15 @@ namespace AllLive.Core
 
             var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
             requestUrl = await GetABougs(requestUrl);
-            var cookie = (await GetRequestHeaders())["Cookie"];
-            var headers = new Dictionary<string, string>
+            var cookie = (await GetRequestHeaders(forceRefresh: true))["Cookie"];
+            var searchHeaders = new Dictionary<string, string>
             {
                 { "authority", "www.douyin.com" },
                 { "accept", "application/json, text/plain, */*" },
                 { "accept-language", "zh-CN,zh;q=0.9,en;q=0.8" },
                 { "cookie", cookie },
                 { "priority", "u=1, i" },
-                { "referer", $"https://www.douyin.com/search/{Uri.EscapeUriString(keyword)}?type=live" },
+                { "referer", $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live" },
                 { "sec-ch-ua", "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"" },
                 { "sec-ch-ua-mobile", "?0" },
                 { "sec-ch-ua-platform", "\"Windows\"" },
@@ -670,7 +670,7 @@ namespace AllLive.Core
                 { "user-agent", USER_AGENT }
             };
 
-            var resp = await HttpUtil.GetString(requestUrl, headers);
+            var resp = await HttpUtil.GetString(requestUrl, searchHeaders);
             Trace.WriteLine($"Douyin.Search url: {requestUrl}");
 
             if (string.IsNullOrWhiteSpace(resp))
@@ -753,11 +753,10 @@ namespace AllLive.Core
                 Rooms = items
             };
         }
-        public async Task<bool> GetLiveStatus(object roomId)
+        public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {
             var result = await GetRoomDetail(roomId: roomId);
-            return result.Status;
-
+            return result.Status ? LiveStatusType.Live : LiveStatusType.Offline;
         }
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
         {
@@ -793,7 +792,7 @@ namespace AllLive.Core
             return sb.ToString();
         }
 
-                private async Task<string> GetABougs(string url)
+        private async Task<string> GetABougs(string url)
         {
             try
             {
@@ -806,9 +805,14 @@ namespace AllLive.Core
                     : $"{rawQuery}&msToken={msToken}";
 
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
+                
                 if (string.IsNullOrEmpty(aBogus))
                 {
-                    return url;
+                    // 没有签名也尝试请求，某些 API 可能不需要
+                    var fallbackQuery = string.IsNullOrEmpty(rawQuery)
+                        ? $"msToken={Uri.EscapeDataString(msToken)}"
+                        : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}";
+                    return $"{baseUrl}?{fallbackQuery}";
                 }
 
                 var finalQuery = string.IsNullOrEmpty(rawQuery)

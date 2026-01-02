@@ -150,8 +150,8 @@ namespace AllLive.Core
             var huyaLines = new List<HuyaLineModel>();
             var huyaBiterates = new List<HuyaBitRateModel>();
 
-            var liveStatus = data["liveStatus"]?.ToString();
-            var isLive = liveStatus == "ON" || liveStatus == "REPLAY";
+            var liveStatus = data["liveStatus"]?.ToString()?.ToUpper();
+            var isLive = liveStatus == "ON"; // 只有 ON 才算正在直播
 
             if (isLive)
             {
@@ -333,20 +333,44 @@ namespace AllLive.Core
             return fallbackUrl;
         }
 
-        public async Task<bool> GetLiveStatus(object roomId)
+        public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {
-            var headers = new Dictionary<string, string>()
+            try
             {
-                { "Accept", "*/*" },
-                { "Origin", "https://www.huya.com" },
-                { "Referer", "https://www.huya.com/" },
-                { "User-Agent", kUserAgent },
-            };
-            var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
-            var result = JObject.Parse(resultText);
-            if (result["status"]?.ToInt32() != 200) return false;
-            var liveStatus = result["data"]?["liveStatus"]?.ToString();
-            return liveStatus == "ON" || liveStatus == "REPLAY";
+                var headers = new Dictionary<string, string>()
+                {
+                    { "Accept", "*/*" },
+                    { "Origin", "https://www.huya.com" },
+                    { "Referer", "https://www.huya.com/" },
+                    { "User-Agent", kUserAgent },
+                };
+                var resultText = await HttpUtil.GetString($"https://mp.huya.com/cache.php?m=Live&do=profileRoom&roomid={roomId}&showSecret=1", headers);
+                var result = JObject.Parse(resultText);
+                
+                if (result["status"]?.ToInt32() != 200)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus: API returned status {result["status"]} for room {roomId}");
+                    return LiveStatusType.Offline;
+                }
+                
+                var liveStatus = result["data"]?["liveStatus"]?.ToString()?.ToUpper();
+                System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus: room {roomId} status = {liveStatus}");
+                
+                switch (liveStatus)
+                {
+                    case "ON":
+                        return LiveStatusType.Live;
+                    case "REPLAY":
+                        return LiveStatusType.Replay;
+                    default:
+                        return LiveStatusType.Offline;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Huya.GetLiveStatus error for room {roomId}: {ex.Message}");
+                return LiveStatusType.Offline;
+            }
         }
 
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)

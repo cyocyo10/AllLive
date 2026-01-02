@@ -341,11 +341,20 @@ namespace AllLive.Core
             return urls;
         }
 
-        public async Task<bool> GetLiveStatus(object roomId)
+        public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {
             var resp = await HttpUtil.GetString($"https://api.live.bilibili.com/room/v1/Room/get_info?room_id={roomId}", headers: await GetRequestHeader());
             var obj = JObject.Parse(resp);
-            return obj["data"]["live_status"].ToObject<int>() == 1;
+            var liveStatus = obj["data"]["live_status"].ToObject<int>();
+            switch (liveStatus)
+            {
+                case 1:
+                    return LiveStatusType.Live;
+                case 2:
+                    return LiveStatusType.Replay;
+                default:
+                    return LiveStatusType.Offline;
+            }
         }
 
         public async Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)

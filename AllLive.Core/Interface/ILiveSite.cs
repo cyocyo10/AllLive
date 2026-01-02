@@ -71,7 +71,7 @@ namespace AllLive.Core.Interface
         /// </summary>
         /// <param name="roomId">房间ID</param>
         /// <returns></returns>
-        Task<bool> GetLiveStatus(object roomId);
+        Task<LiveStatusType> GetLiveStatus(object roomId);
 
     }
 }

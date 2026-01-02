@@ -278,10 +278,17 @@ namespace AllLive.Core
             }
 
         }
-        public async Task<bool> GetLiveStatus(object roomId)
+        public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {
             var roomInfo = await GetRoomInfo(roomId.ToString());
-            return roomInfo["show_status"].ToInt32() == 1 && roomInfo["videoLoop"].ToInt32() != 1;
+            var showStatus = roomInfo["show_status"].ToInt32();
+            var videoLoop = roomInfo["videoLoop"].ToInt32();
+            
+            if (showStatus == 1 && videoLoop != 1)
+                return LiveStatusType.Live;
+            if (videoLoop == 1)
+                return LiveStatusType.Replay;
+            return LiveStatusType.Offline;
         }
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
         {
