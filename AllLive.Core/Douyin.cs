@@ -820,10 +820,15 @@ namespace AllLive.Core
                     ? $"msToken={msToken}"
                     : $"{rawQuery}&msToken={msToken}";
 
+                Debug.WriteLine($"GetABougs: queryForSign length={queryForSign.Length}");
+                
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
+                
+                Debug.WriteLine($"GetABougs: aBogus result='{aBogus}'");
                 
                 if (string.IsNullOrEmpty(aBogus))
                 {
+                    Debug.WriteLine("GetABougs: aBogus is empty, using fallback");
                     // 没有签名也尝试请求，某些 API 可能不需要
                     var fallbackQuery = string.IsNullOrEmpty(rawQuery)
                         ? $"msToken={Uri.EscapeDataString(msToken)}"

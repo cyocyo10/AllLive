@@ -126,7 +126,9 @@ namespace AllLive.UWP.Helper
         {
             try
             {
+                LogHelper.Log("WebViewDouyinScriptRunner InitializeAsync starting", LogType.DEBUG);
                 var scripts = await LoadScriptsAsync().ConfigureAwait(false);
+                LogHelper.Log($"WebViewDouyinScriptRunner scripts loaded, length={scripts?.Length ?? 0}", LogType.DEBUG);
 
                 await RunOnUiThreadAsync(async () =>
                 {
@@ -145,10 +147,24 @@ namespace AllLive.UWP.Helper
                     await NavigateToBlankAsync();
 
                     _scripts = scripts;
-                    await _webView.InvokeScriptAsync("eval", new[] { _scripts });
+                    LogHelper.Log("WebViewDouyinScriptRunner evaluating scripts...", LogType.DEBUG);
+                    var evalResult = await _webView.InvokeScriptAsync("eval", new[] { _scripts });
+                    LogHelper.Log($"WebViewDouyinScriptRunner scripts eval result: {Truncate(evalResult ?? "null")}", LogType.DEBUG);
+                    
+                    // 验证函数是否存在
+                    var checkResult = await _webView.InvokeScriptAsync("eval", new[] { "typeof getABogus" });
+                    LogHelper.Log($"WebViewDouyinScriptRunner getABogus type: {checkResult}", LogType.DEBUG);
+                    
+                    var checkResult2 = await _webView.InvokeScriptAsync("eval", new[] { "typeof getMSSDKSignature" });
+                    LogHelper.Log($"WebViewDouyinScriptRunner getMSSDKSignature type: {checkResult2}", LogType.DEBUG);
+                    
                     LogHelper.Log("WebViewDouyinScriptRunner initialized", LogType.DEBUG);
                     _initialized = true;
                 }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log($"WebViewDouyinScriptRunner InitializeAsync error: {ex}", LogType.ERROR, ex);
             }
             finally
             {
@@ -191,11 +207,23 @@ namespace AllLive.UWP.Helper
             handler = (sender, args) =>
             {
                 _webView.NavigationCompleted -= handler;
+                LogHelper.Log($"WebViewDouyinScriptRunner NavigateToBlank completed: Success={args.IsSuccess}", LogType.DEBUG);
                 tcs.TrySetResult(true);
             };
 
             _webView.NavigationCompleted += handler;
-            _webView.NavigateToString("<html><head><meta charset='utf-8'></head><body></body></html>");
+            // 添加一个简单的 window 模拟，因为 a_bogus.js 可能需要
+            _webView.NavigateToString(@"<html>
+<head>
+<meta charset='utf-8'>
+<script>
+if (typeof window === 'undefined') { var window = this; }
+if (typeof navigator === 'undefined') { var navigator = { userAgent: '' }; }
+if (typeof document === 'undefined') { var document = { cookie: '' }; }
+</script>
+</head>
+<body></body>
+</html>");
 
             return tcs.Task;
         }
