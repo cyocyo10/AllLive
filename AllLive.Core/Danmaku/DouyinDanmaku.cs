@@ -59,6 +59,10 @@ namespace AllLive.Core.Danmaku
         public async Task Start(object args)
         {
             danmakuArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
+            
+            Trace.WriteLine($"DouyinDanmaku.Start: RoomId={danmakuArgs.RoomId}, UserId={danmakuArgs.UserId}");
+            Trace.WriteLine($"DouyinDanmaku.Start: Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(50, danmakuArgs.Cookie?.Length ?? 0))}...");
+            
             isStopping = false;
             reconnectAttempts = 0;
             useBackupEndpoint = false;
@@ -365,9 +369,9 @@ namespace AllLive.Core.Danmaku
                         ws.OnMessage += Ws_OnMessage;
                         ws.OnClose += Ws_OnClose;
 
-                    timer?.Stop();
-                    timer?.Dispose();
-                    timer = new System.Timers.Timer(HeartbeatTime)
+                        timer?.Stop();
+                        timer?.Dispose();
+                        timer = new System.Timers.Timer(HeartbeatTime)
                         {
                             AutoReset = true
                         };

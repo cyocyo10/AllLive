@@ -60,21 +60,39 @@ namespace AllLive.UWP.Helper
                 return await RunOnUiThreadAsync(async () =>
                 {
                     LogHelper.Log("WebViewDouyinScriptRunner exec: " + script, LogType.DEBUG);
+                    
+                    // 检查 WebView 状态
+                    if (_webView == null)
+                    {
+                        LogHelper.Log("WebViewDouyinScriptRunner: WebView is null, resetting", LogType.DEBUG);
+                        throw new InvalidOperationException("WebView is null");
+                    }
+                    
                     var result = await _webView.InvokeScriptAsync("eval", new[] { script });
                     LogHelper.Log("WebViewDouyinScriptRunner result: " + Truncate(result ?? string.Empty), LogType.DEBUG);
+                    
+                    // 检查是否返回错误
+                    if (!string.IsNullOrEmpty(result) && result.StartsWith("ERROR:"))
+                    {
+                        LogHelper.Log("WebViewDouyinScriptRunner JS error: " + result, LogType.ERROR);
+                        // JS 执行出错，重置 WebView
+                        throw new InvalidOperationException(result);
+                    }
+                    
                     return result ?? string.Empty;
                 }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                if (retryOnFailure && IsRecoverableWebViewException(ex))
+                LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} error: {ex.Message}", LogType.ERROR, ex);
+                
+                if (retryOnFailure)
                 {
-                    LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} recoverable error, resetting: {ex.HResult}", LogType.DEBUG);
+                    LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} retrying after reset", LogType.DEBUG);
                     await ResetWebViewAsync().ConfigureAwait(false);
                     return await ExecuteScriptInternalAsync(functionName, arg1, arg2, retryOnFailure: false).ConfigureAwait(false);
                 }
 
-                LogHelper.Log($"WebViewDouyinScriptRunner.{functionName} error: {ex}", LogType.ERROR, ex);
                 return string.Empty;
             }
         }
