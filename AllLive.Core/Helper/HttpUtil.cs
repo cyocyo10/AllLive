@@ -140,18 +140,18 @@ namespace AllLive.Core.Helper
 
         public static async Task<HttpResponseMessage> Head(string url, IDictionary<string, string> headers = null)
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Head, url))
+            var request = new HttpRequestMessage(HttpMethod.Head, url);
+            if (headers != null)
             {
-                if (headers != null)
+                foreach (var item in headers)
                 {
-                    foreach (var item in headers)
-                    {
-                        request.Headers.TryAddWithoutValidation(item.Key, item.Value);
-                    }
+                    request.Headers.TryAddWithoutValidation(item.Key, item.Value);
                 }
-                var response = await SharedClient.SendAsync(request).ConfigureAwait(false);
-                return response;
             }
+            // 注意：不使用 using 包裹 request，因为返回的 response 需要在调用方使用
+            // 调用方负责处理 response 的生命周期
+            var response = await SharedClient.SendAsync(request).ConfigureAwait(false);
+            return response;
         }
     }
 }

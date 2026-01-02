@@ -75,7 +75,7 @@ namespace AllLive.UWP.ViewModels
         public void LoadLiveStatus()
         {
             LoaddingLiveStatus = true;
-            loadedCount = 0;
+            System.Threading.Interlocked.Exchange(ref loadedCount, 0);
             foreach (var item in Items)
             {
                 LoadLiveStatus(item);
@@ -100,11 +100,10 @@ namespace AllLive.UWP.ViewModels
             }
             finally
             {
-                loadedCount++;
-                if (loadedCount == Items.Count)
+                var currentCount = System.Threading.Interlocked.Increment(ref loadedCount);
+                if (currentCount == Items.Count)
                 {
                     LoaddingLiveStatus = false;
-                    loadedCount = 0;
                     // 排序：直播 > 回放 > 未直播
                     Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => (int)x.LiveStatus));
                 }

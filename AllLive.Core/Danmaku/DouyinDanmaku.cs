@@ -356,7 +356,7 @@ namespace AllLive.Core.Danmaku
                         {
                             {"Origin","https://live.douyin.com" },
                             {"Cookie", danmakuArgs.Cookie},
-                            {"User-Agnet","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0" }
+                            {"User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0" }
                         };
                         ws.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
 

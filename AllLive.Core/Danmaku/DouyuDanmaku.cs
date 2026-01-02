@@ -148,10 +148,10 @@ namespace AllLive.Core.Danmaku
 
         public async Task Stop()
         {
-            timer.Stop();
+            timer?.Stop();
             await Task.Run(() =>
             {
-                ws.Close();
+                ws?.Close();
             });
         }
 
