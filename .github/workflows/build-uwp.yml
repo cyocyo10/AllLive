@@ -50,5 +50,5 @@ jobs:
           name: AllLive-UWP-x64
           path: |
             AllLive.UWP/AppPackages/**/*.msix
-            AllLive.UWP/AppPackages/**/*.appx
             AllLive.UWP/AppPackages/**/*.cer
+          compression-level: 9

@@ -21,12 +21,20 @@ namespace AllLive.Core
 {
     public class Douyin : ILiveSite
     {
-        public string Name => "¶¶ÒôÖ±²¥";
+        public string Name => "æŠ–éŸ³ç›´æ’­";
         public ILiveDanmaku GetDanmaku() => new DouyinDanmaku();
 
         private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
         private const string REFERER = "https://live.douyin.com";
         private const string AUTHORITY = "live.douyin.com";
+
+        /// <summary>
+        /// éªŒè¯å¤„ç†å™¨ï¼Œç”¨äºå¤„ç†æŠ–éŸ³é£æ§éªŒè¯
+        /// </summary>
+        public static IDouyinVerifyHandler VerifyHandler { get; set; }
+
+        // éªŒè¯åçš„æœç´¢ Cookie
+        private static string _verifiedSearchCookie;
 
         Dictionary<string, string> headers = new Dictionary<string, string>
         {
@@ -42,7 +50,7 @@ namespace AllLive.Core
                 return headers;
             }
             
-            // Ç¿ÖÆË¢ĞÂÊ±£¬ÏÈÇå³ı¾ÉµÄ Cookie£¬±ÜÃâÊ¹ÓÃ¹ıÆÚµÄ __ac_nonce
+            // Ç¿ï¿½ï¿½Ë¢ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ Cookieï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ã¹ï¿½ï¿½Úµï¿½ __ac_nonce
             if (forceRefresh)
             {
                 headers.Remove("Cookie");
@@ -51,7 +59,7 @@ namespace AllLive.Core
             
             try
             {
-                // ´´½¨Ò»¸ö²»´ø Cookie µÄ headers ¸±±¾ÓÃÓÚÇëÇó£¬È·±£»ñÈ¡È«ĞÂµÄ Cookie
+                // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Cookie ï¿½ï¿½ headers ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½È¡È«ï¿½Âµï¿½ Cookie
                 var requestHeaders = new Dictionary<string, string>
                 {
                     { "User-Agent", USER_AGENT },
@@ -91,10 +99,10 @@ namespace AllLive.Core
             string renderData = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(renderData))
             {
-                throw new Exception("ÎŞ·¨¶ÁÈ¡·ÖÀàÊı¾İ");
+                throw new Exception("ï¿½Ş·ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
             }
             renderData = renderData.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
-            // ½âÎöJSONÊı¾İ
+            // ï¿½ï¿½ï¿½ï¿½JSONï¿½ï¿½ï¿½ï¿½
             var renderDataJson = JObject.Parse(renderData);
             foreach (var item in renderDataJson["categoryData"])
             {
@@ -158,7 +166,7 @@ namespace AllLive.Core
             Trace.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Trace.WriteLine($"Douyin.GetCategoryRooms ÎŞĞ§ÏìÓ¦: {resp}");
+                Trace.WriteLine($"Douyin.GetCategoryRooms ï¿½ï¿½Ğ§ï¿½ï¿½Ó¦: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -218,7 +226,7 @@ namespace AllLive.Core
             Trace.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Trace.WriteLine($"Douyin.GetRecommendRooms ÎŞĞ§ÏìÓ¦: {resp}");
+                Trace.WriteLine($"Douyin.GetRecommendRooms ï¿½ï¿½Ğ§ï¿½ï¿½Ó¦: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -248,12 +256,12 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            // ÓĞÁ½ÖÖroomId£¬Ò»ÖÖÊÇwebRid£¬Ò»ÖÖÊÇroomId
-            // roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId
-            // roomIdÒ»°ã³¤¶ÈÎª19Î»£¬ÀıÈç£º7376429659866598196
-            // webRidÊÇ¹Ì¶¨µÄ£¬ÓÃ»§Ã¿´Î¿ª²¥¶¼ÊÇÍ¬Ò»¸öwebRid
-            // webRidÒ»°ã³¤¶ÈÎª11-12Î»£¬ÀıÈç£º416144012050
-            // ÕâÀï¼òµ¥½øĞĞÅĞ¶Ï£¬Èç¹ûroomId³¤¶ÈĞ¡ÓÚ15£¬ÔòÈÏÎªÊÇwebRid
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½roomIdï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½webRidï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½roomId
+            // roomIdï¿½ï¿½Ò»ï¿½ï¿½ï¿½ÔµÄ£ï¿½ï¿½Ã»ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Âµï¿½roomId
+            // roomIdÒ»ï¿½ã³¤ï¿½ï¿½Îª19Î»ï¿½ï¿½ï¿½ï¿½ï¿½ç£º7376429659866598196
+            // webRidï¿½Ç¹Ì¶ï¿½ï¿½Ä£ï¿½ï¿½Ã»ï¿½Ã¿ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬Ò»ï¿½ï¿½webRid
+            // webRidÒ»ï¿½ã³¤ï¿½ï¿½Îª11-12Î»ï¿½ï¿½ï¿½ï¿½ï¿½ç£º416144012050
+            // ï¿½ï¿½ï¿½ï¿½òµ¥½ï¿½ï¿½ï¿½ï¿½Ğ¶Ï£ï¿½ï¿½ï¿½ï¿½roomIdï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½15ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½webRid
             if (roomId.ToString().Length <= 16)
             {
                 var webRid = roomId as string;
@@ -263,34 +271,34 @@ namespace AllLive.Core
             return await GetRoomDetailByRoomID(roomId as string);
         }
         /// <summary>
-        /// Í¨¹ıRoomId»ñÈ¡Ö±²¥¼äÏêÇé
+        /// Í¨ï¿½ï¿½RoomIdï¿½ï¿½È¡Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="roomId">
-        /// roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId¡£
-        /// roomIdÒ»°ã³¤¶ÈÎª19Î»£¬ÀıÈç£º7376429659866598196
+        /// roomIdï¿½ï¿½Ò»ï¿½ï¿½ï¿½ÔµÄ£ï¿½ï¿½Ã»ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Âµï¿½roomIdï¿½ï¿½
+        /// roomIdÒ»ï¿½ã³¤ï¿½ï¿½Îª19Î»ï¿½ï¿½ï¿½ï¿½ï¿½ç£º7376429659866598196
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByRoomID(string roomId)
         {
             var roomData = await GetRoomDataByRoomID(roomId);
-            // Í¨¹ı·¿¼äĞÅÏ¢»ñÈ¡WebRid
+            // Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½È¡WebRid
             var webRid = roomData["data"]["room"]["owner"]["web_rid"].ToString();
-            // ¶ÁÈ¡ÓÃ»§Î¨Ò»ID£¬ÓÃÓÚµ¯Ä»Á¬½Ó
-            // ËÆºõÕâ¸ö²ÎÊı²»ÊÇ±ØĞëµÄ£¬ÏÈËæ»úÉú³ÉÒ»¸ö
+            // ï¿½ï¿½È¡ï¿½Ã»ï¿½Î¨Ò»IDï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ä»ï¿½ï¿½ï¿½ï¿½
+            // ï¿½Æºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç±ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
             //var userUniqueId = await GetUserUniqueId(webRid);
             var userUniqueId = GenerateRandomNumber(12).ToString();
             var room = roomData["data"]["room"];
             var owner = room["owner"];
             var status = room["status"].ToObject<int>();
-            // roomIdÊÇÒ»´ÎĞÔµÄ£¬ÓÃ»§Ã¿´ÎÖØĞÂ¿ª²¥¶¼»áÉú³ÉÒ»¸öĞÂµÄroomId
-            // ËùÒÔÈç¹ûroomId¶ÔÓ¦µÄÖ±²¥¼ä×´Ì¬²»ÊÇÖ±²¥ÖĞ£¬¾ÍÍ¨¹ıwebRid»ñÈ¡Ö±²¥¼äĞÅÏ¢
+            // roomIdï¿½ï¿½Ò»ï¿½ï¿½ï¿½ÔµÄ£ï¿½ï¿½Ã»ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Âµï¿½roomId
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½roomIdï¿½ï¿½Ó¦ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½Ğ£ï¿½ï¿½ï¿½Í¨ï¿½ï¿½webRidï¿½ï¿½È¡Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
             if (status == 4)
             {
                 var result = await GetRoomDetailByWebRid(webRid);
                 return result;
             }
             var roomStatus = status == 2;
-            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
+            // ï¿½ï¿½Òªï¿½ï¿½Îªï¿½Ë»ï¿½È¡cookie,ï¿½ï¿½ï¿½Úµï¿½Ä»websocketï¿½ï¿½ï¿½ï¿½
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -319,11 +327,11 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// Í¨¹ıwebRid»ñÈ¡Ö±²¥¼äÏêÇé
+        /// Í¨ï¿½ï¿½webRidï¿½ï¿½È¡Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="webRid">
-        /// webRidÊÇ¹Ì¶¨µÄ£¬ÓÃ»§Ã¿´Î¿ª²¥¶¼ÊÇÍ¬Ò»¸öwebRid
-        /// webRidÒ»°ã³¤¶ÈÎª11-12Î»£¬ÀıÈç£º416144012050
+        /// webRidï¿½Ç¹Ì¶ï¿½ï¿½Ä£ï¿½ï¿½Ã»ï¿½Ã¿ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬Ò»ï¿½ï¿½webRid
+        /// webRidÒ»ï¿½ã³¤ï¿½ï¿½Îª11-12Î»ï¿½ï¿½ï¿½ï¿½ï¿½ç£º416144012050
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByWebRid(string webRid)
@@ -342,10 +350,10 @@ namespace AllLive.Core
 
         private async Task<LiveRoomDetail> GetRoomDetailByWebRidApi(string webRid)
         {
-            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ¿ªÊ¼ ==========");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ï¿½ï¿½Ê¼ ==========");
             Trace.WriteLine($"[RoomDetail] webRid={webRid}");
             
-            // ¶ÁÈ¡·¿¼äĞÅÏ¢
+            // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
             //var data = await _getRoomDataByApi(webRid);
             var data = await GetRoomDataApi(webRid);
             var roomData = data["data"][0];
@@ -354,8 +362,8 @@ namespace AllLive.Core
             var roomId = roomData["id_str"].ToString();
             Trace.WriteLine($"[RoomDetail] roomId={roomId}");
 
-            // ¶ÁÈ¡ÓÃ»§Î¨Ò»ID£¬ÓÃÓÚµ¯Ä»Á¬½Ó
-            // ËÆºõÕâ¸ö²ÎÊı²»ÊÇ±ØĞëµÄ£¬ÏÈËæ»úÉú³ÉÒ»¸ö
+            // ï¿½ï¿½È¡ï¿½Ã»ï¿½Î¨Ò»IDï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ä»ï¿½ï¿½ï¿½ï¿½
+            // ï¿½Æºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç±ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
             //var userUniqueId = await GetUserUniqueId(webRid);
             var userUniqueId = GenerateRandomNumber(12).ToString();
             Trace.WriteLine($"[RoomDetail] userUniqueId={userUniqueId}");
@@ -365,14 +373,14 @@ namespace AllLive.Core
             var roomStatus = roomData["status"].ToObject<int>() == 2;
             Trace.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
 
-            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
-            Trace.WriteLine($"[RoomDetail] »ñÈ¡Cookie (forceRefresh=true)...");
+            // ï¿½ï¿½Òªï¿½ï¿½Îªï¿½Ë»ï¿½È¡cookie,ï¿½ï¿½ï¿½Úµï¿½Ä»websocketï¿½ï¿½ï¿½ï¿½
+            Trace.WriteLine($"[RoomDetail] ï¿½ï¿½È¡Cookie (forceRefresh=true)...");
             var headers = await GetRequestHeaders(forceRefresh: true);
             var cookie = headers.ContainsKey("Cookie") ? headers["Cookie"] : "";
-            Trace.WriteLine($"[RoomDetail] Cookie³¤¶È={cookie.Length}");
-            Trace.WriteLine($"[RoomDetail] CookieÔ¤ÀÀ={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
+            Trace.WriteLine($"[RoomDetail] Cookieï¿½ï¿½ï¿½ï¿½={cookie.Length}");
+            Trace.WriteLine($"[RoomDetail] CookieÔ¤ï¿½ï¿½={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
             
-            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ½áÊø ==========");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ï¿½ï¿½ï¿½ï¿½ ==========");
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -415,7 +423,7 @@ namespace AllLive.Core
             var anchor = roomData["roomStore"]["roomInfo"]["anchor"];
             var roomStatus = room["status"].ToObject<int>() == 2;
 
-            // Ö÷ÒªÊÇÎªÁË»ñÈ¡cookie,ÓÃÓÚµ¯Ä»websocketÁ¬½Ó
+            // ï¿½ï¿½Òªï¿½ï¿½Îªï¿½Ë»ï¿½È¡cookie,ï¿½ï¿½ï¿½Úµï¿½Ä»websocketï¿½ï¿½ï¿½ï¿½
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -446,9 +454,9 @@ namespace AllLive.Core
             };
         }
         /// <summary>
-        ///  ½øÈëÖ±²¥¼äÇ°ĞèÒªÏÈ»ñÈ¡cookie
+        ///  ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Òªï¿½È»ï¿½È¡cookie
         /// </summary>
-        /// <param name="webRid">Ö±²¥¼äRID</param>
+        /// <param name="webRid">Ö±ï¿½ï¿½ï¿½ï¿½RID</param>
         /// <returns></returns>
         private async Task<string> GetWebCookie(string webRid)
         {
@@ -468,8 +476,51 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// ¶ÁÈ¡ÓÃ»§µÄÎ¨Ò»ID
-        /// ÔİÊ±ÎŞÓÃ
+        /// è·å–æœç´¢é¡µé¢çš„ Cookie (www.douyin.com åŸŸå)
+        /// </summary>
+        private async Task<string> GetSearchCookie(string keyword)
+        {
+            try
+            {
+                var searchUrl = $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live";
+                var requestHeaders = new Dictionary<string, string>
+                {
+                    { "User-Agent", USER_AGENT },
+                    { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+                };
+                
+                var resp = await HttpUtil.Head(searchUrl, requestHeaders);
+                var cookieBuilder = new StringBuilder();
+                
+                if (resp.Headers.TryGetValues("Set-Cookie", out var cookies))
+                {
+                    foreach (var item in cookies)
+                    {
+                        var cookie = item.Split(';')[0];
+                        if (cookie.Contains("ttwid") || cookie.Contains("__ac_nonce") || 
+                            cookie.Contains("msToken") || cookie.Contains("s_v_web_id") ||
+                            cookie.Contains("passport_csrf_token"))
+                        {
+                            cookieBuilder.Append(cookie).Append(';');
+                        }
+                    }
+                }
+                
+                var result = cookieBuilder.ToString().TrimEnd(';');
+                Trace.WriteLine($"[GetSearchCookie] è·å–åˆ°Cookie: {TruncateForLog(result, 100)}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[GetSearchCookie] å¼‚å¸¸: {ex.Message}");
+                // å¤±è´¥æ—¶å›é€€åˆ° live.douyin.com çš„ cookie
+                return (await GetRequestHeaders(forceRefresh: true))["Cookie"];
+            }
+        }
+
+        /// <summary>
+        /// ï¿½ï¿½È¡ï¿½Ã»ï¿½ï¿½ï¿½Î¨Ò»ID
+        /// ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         /// <param name="webRid"></param>
         /// <returns></returns>
@@ -496,7 +547,7 @@ namespace AllLive.Core
             string json = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(json))
             {
-                throw new Exception("ÎŞ·¨¶ÁÈ¡Ö±²¥¼äÊı¾İ");
+                throw new Exception("ï¿½Ş·ï¿½ï¿½ï¿½È¡Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
             }
             json = json.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
             return JObject.Parse(json)["state"];
@@ -639,10 +690,15 @@ namespace AllLive.Core
             return Task.FromResult(qn.Data as List<string>);
         }
 
-        public async Task<LiveSearchResult> Search(string keyword, int page = 1)
+        public Task<LiveSearchResult> Search(string keyword, int page = 1)
         {
-            Trace.WriteLine($"========== Douyin.Search ¿ªÊ¼ ==========");
-            Trace.WriteLine($"[Search] keyword={keyword}, page={page}");
+            return SearchInternal(keyword, page, useVerifiedCookie: false);
+        }
+
+        private async Task<LiveSearchResult> SearchInternal(string keyword, int page, bool useVerifiedCookie)
+        {
+            Trace.WriteLine($"========== Douyin.Search å¼€å§‹ ==========");
+            Trace.WriteLine($"[Search] keyword={keyword}, page={page}, useVerifiedCookie={useVerifiedCookie}");
             var query = new Dictionary<string, string>
             {
                 { "device_platform", "webapp" },
@@ -681,19 +737,30 @@ namespace AllLive.Core
             };
 
             var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
-            Trace.WriteLine($"[Search] Ô­Ê¼URL: {TruncateForLog(requestUrl, 150)}");
+            Trace.WriteLine($"[Search] åŸå§‹URL: {TruncateForLog(requestUrl, 150)}");
             
             requestUrl = await GetABougs(requestUrl);
-            Trace.WriteLine($"[Search] Ç©ÃûºóURL: {TruncateForLog(requestUrl, 200)}");
+            Trace.WriteLine($"[Search] ç­¾ååURL: {TruncateForLog(requestUrl, 200)}");
             
-            var cookie = (await GetRequestHeaders(forceRefresh: true))["Cookie"];
-            Trace.WriteLine($"[Search] Cookie: {TruncateForLog(cookie, 100)}");
+            // ä¼˜å…ˆä½¿ç”¨éªŒè¯åçš„ Cookie
+            string searchCookie;
+            if (useVerifiedCookie && !string.IsNullOrEmpty(_verifiedSearchCookie))
+            {
+                searchCookie = _verifiedSearchCookie;
+                Trace.WriteLine($"[Search] ä½¿ç”¨éªŒè¯åçš„Cookie");
+            }
+            else
+            {
+                searchCookie = await GetSearchCookie(keyword);
+            }
+            Trace.WriteLine($"[Search] Cookie: {TruncateForLog(searchCookie, 100)}");
+            
             var searchHeaders = new Dictionary<string, string>
             {
                 { "authority", "www.douyin.com" },
                 { "accept", "application/json, text/plain, */*" },
                 { "accept-language", "zh-CN,zh;q=0.9,en;q=0.8" },
-                { "cookie", cookie },
+                { "cookie", searchCookie },
                 { "priority", "u=1, i" },
                 { "referer", $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live" },
                 { "sec-ch-ua", "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"" },
@@ -705,14 +772,14 @@ namespace AllLive.Core
                 { "user-agent", USER_AGENT }
             };
 
-            Trace.WriteLine($"[Search] ¿ªÊ¼ÇëÇó...");
+            Trace.WriteLine($"[Search] å¼€å§‹è¯·æ±‚...");
             var resp = await HttpUtil.GetString(requestUrl, searchHeaders);
-            Trace.WriteLine($"[Search] ÏìÓ¦³¤¶È: {resp?.Length ?? 0}");
-            Trace.WriteLine($"[Search] ÏìÓ¦Ô¤ÀÀ: {TruncateForLog(resp, 300)}");
+            Trace.WriteLine($"[Search] å“åº”é•¿åº¦: {resp?.Length ?? 0}");
+            Trace.WriteLine($"[Search] å“åº”é¢„è§ˆ: {TruncateForLog(resp, 300)}");
 
             if (string.IsNullOrWhiteSpace(resp))
             {
-                Trace.WriteLine("[Search] ´íÎó: ÏìÓ¦Îª¿Õ");
+                Trace.WriteLine("[Search] ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½Ó¦Îªï¿½ï¿½");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -727,8 +794,8 @@ namespace AllLive.Core
             }
             catch (Exception parseEx)
             {
-                Trace.WriteLine($"[Search] JSON½âÎöÊ§°Ü: {parseEx.Message}");
-                Trace.WriteLine($"[Search] Ô­Ê¼ÏìÓ¦: {TruncateForLog(resp)}");
+                Trace.WriteLine($"[Search] JSONè§£æå¤±è´¥: {parseEx.Message}");
+                Trace.WriteLine($"[Search] åŸå§‹å“åº”: {TruncateForLog(resp)}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -738,7 +805,43 @@ namespace AllLive.Core
 
             var statusCode = json["status_code"]?.ToObject<int?>() ?? 0;
             var statusMsg = json["status_msg"]?.ToString();
-            Trace.WriteLine($"[Search] API×´Ì¬: code={statusCode}, msg={statusMsg}");
+            Trace.WriteLine($"[Search] APIçŠ¶æ€: code={statusCode}, msg={statusMsg}");
+
+            // æ£€æŸ¥æ˜¯å¦éœ€è¦éªŒè¯
+            var searchNilType = json["search_nil_info"]?["search_nil_type"]?.ToString();
+            if (searchNilType == "verify_check")
+            {
+                Trace.WriteLine("[Search] æ£€æµ‹åˆ°éœ€è¦éªŒè¯ (verify_check)");
+                
+                if (VerifyHandler != null)
+                {
+                    Trace.WriteLine("[Search] è§¦å‘éªŒè¯æµç¨‹...");
+                    var verifyUrl = $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live";
+                    var verifiedCookie = await VerifyHandler.VerifyAsync(verifyUrl);
+                    
+                    if (!string.IsNullOrEmpty(verifiedCookie))
+                    {
+                        Trace.WriteLine("[Search] éªŒè¯æˆåŠŸï¼Œä¿å­˜ Cookie å¹¶é‡è¯•æœç´¢");
+                        _verifiedSearchCookie = verifiedCookie;
+                        // é‡è¯•æœç´¢ï¼ˆä¸å†è§¦å‘éªŒè¯ï¼Œé¿å…æ­»å¾ªç¯ï¼‰
+                        return await SearchInternal(keyword, page, useVerifiedCookie: true);
+                    }
+                    else
+                    {
+                        Trace.WriteLine("[Search] éªŒè¯å¤±è´¥æˆ–ç”¨æˆ·å–æ¶ˆ");
+                    }
+                }
+                else
+                {
+                    Trace.WriteLine("[Search] æœªè®¾ç½®éªŒè¯å¤„ç†å™¨ï¼Œæ— æ³•å®ŒæˆéªŒè¯");
+                }
+                
+                return new LiveSearchResult()
+                {
+                    HasMore = false,
+                    Rooms = new List<LiveRoomItem>()
+                };
+            }
 
             var dataToken = json["data"];
             JArray livesArray = dataToken as JArray;
@@ -749,8 +852,8 @@ namespace AllLive.Core
 
             if (livesArray == null)
             {
-                Trace.WriteLine("[Search] ´íÎó: Êı¾İ½á¹¹Òì³££¬ÕÒ²»µ½Ö±²¥ÁĞ±í");
-                Trace.WriteLine($"[Search] JSON½á¹¹: {TruncateForLog(json.ToString(Formatting.None))}");
+                Trace.WriteLine("[Search] é”™è¯¯: æ•°æ®ç»“æ„å¼‚å¸¸ï¼Œæ‰¾ä¸åˆ°ç›´æ’­åˆ—è¡¨");
+                Trace.WriteLine($"[Search] JSONç»“æ„: {TruncateForLog(json.ToString(Formatting.None))}");
                 return new LiveSearchResult()
                 {
                     HasMore = false,
@@ -758,7 +861,7 @@ namespace AllLive.Core
                 };
             }
 
-            Trace.WriteLine($"[Search] ÕÒµ½ {livesArray.Count} ÌõÊı¾İ");
+            Trace.WriteLine($"[Search] æ‰¾åˆ° {livesArray.Count} æ¡æ•°æ®");
             var items = new List<LiveRoomItem>();
             foreach (var item in livesArray)
             {
@@ -786,8 +889,8 @@ namespace AllLive.Core
             var hasMoreToken = (dataToken as JObject)?["has_more"];
             var hasMore = hasMoreToken?.ToObject<int?>() == 1 || items.Count >= 10;
 
-            Trace.WriteLine($"[Search] ½âÎöÍê³É: ÓĞĞ§½á¹û={items.Count}, hasMore={hasMore}");
-            Trace.WriteLine($"========== Douyin.Search ½áÊø ==========");
+            Trace.WriteLine($"[Search] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½Ğ§ï¿½ï¿½ï¿½={items.Count}, hasMore={hasMore}");
+            Trace.WriteLine($"========== Douyin.Search ï¿½ï¿½ï¿½ï¿½ ==========");
             return new LiveSearchResult()
             {
                 HasMore = hasMore,
@@ -820,7 +923,7 @@ namespace AllLive.Core
             var sb = new StringBuilder();
             for (int i = 0; i < length; i++)
             {
-                // µÚÒ»Î»²»ÄÜÎª0
+                // ï¿½ï¿½Ò»Î»ï¿½ï¿½ï¿½ï¿½Îª0
                 if (i == 0)
                 {
                     sb.Append(random.Next(1, 9));
@@ -835,7 +938,7 @@ namespace AllLive.Core
 
         private async Task<string> GetABougs(string url)
         {
-            Trace.WriteLine($"[GetABougs] ¿ªÊ¼Éú³ÉÇ©Ãû");
+            Trace.WriteLine($"[GetABougs] ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½");
             try
             {
                 var uri = new Uri(url);
@@ -846,18 +949,18 @@ namespace AllLive.Core
                     ? $"msToken={msToken}"
                     : $"{rawQuery}&msToken={msToken}";
 
-                Trace.WriteLine($"[GetABougs] queryForSign³¤¶È={queryForSign.Length}");
-                Trace.WriteLine($"[GetABougs] µ÷ÓÃ DouyinABogusHelper.GenerateAsync...");
+                Trace.WriteLine($"[GetABougs] queryForSignï¿½ï¿½ï¿½ï¿½={queryForSign.Length}");
+                Trace.WriteLine($"[GetABougs] ï¿½ï¿½ï¿½ï¿½ DouyinABogusHelper.GenerateAsync...");
                 
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
                 
-                Trace.WriteLine($"[GetABougs] a_bogus½á¹û: '{aBogus}'");
-                Trace.WriteLine($"[GetABougs] a_bogus³¤¶È: {aBogus?.Length ?? 0}");
-                Trace.WriteLine($"[GetABougs] a_bogusÊÇ·ñÎª¿Õ: {string.IsNullOrEmpty(aBogus)}");
+                Trace.WriteLine($"[GetABougs] a_bogusï¿½ï¿½ï¿½: '{aBogus}'");
+                Trace.WriteLine($"[GetABougs] a_bogusï¿½ï¿½ï¿½ï¿½: {aBogus?.Length ?? 0}");
+                Trace.WriteLine($"[GetABougs] a_bogusï¿½Ç·ï¿½Îªï¿½ï¿½: {string.IsNullOrEmpty(aBogus)}");
                 
                 if (string.IsNullOrEmpty(aBogus))
                 {
-                    Trace.WriteLine("[GetABougs] ¾¯¸æ: a_bogusÎª¿Õ£¬Ê¹ÓÃÎŞÇ©ÃûURL");
+                    Trace.WriteLine("[GetABougs] ï¿½ï¿½ï¿½ï¿½: a_bogusÎªï¿½Õ£ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½Ç©ï¿½ï¿½URL");
                     var fallbackQuery = string.IsNullOrEmpty(rawQuery)
                         ? $"msToken={Uri.EscapeDataString(msToken)}"
                         : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}";
@@ -868,12 +971,12 @@ namespace AllLive.Core
                     ? $"msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}"
                     : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}";
 
-                Trace.WriteLine($"[GetABougs] Ç©Ãû³É¹¦");
+                Trace.WriteLine($"[GetABougs] Ç©ï¿½ï¿½ï¿½É¹ï¿½");
                 return $"{baseUrl}?{finalQuery}";
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"[GetABougs] Òì³£: {ex.Message}");
+                Trace.WriteLine($"[GetABougs] ï¿½ì³£: {ex.Message}");
                 Trace.WriteLine($"[GetABougs] StackTrace: {ex.StackTrace}");
                 return url;
             }
