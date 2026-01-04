@@ -83,11 +83,30 @@
                 Width="48"
                 Height="48"
                 Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=historyVM.CleanCommand}"
+                Command="{x:Bind Path=historyVM.OutputCommand}"
+                ToolTipService.ToolTip="导出"
                 Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-
+                <FontIcon Glyph="&#xEDE1;" FontSize="18"/>
+            </Button>
+            <Button
+                Width="48"
+                Height="48"
+                Margin="0,12,0,0"
+                Windows10version1809:CornerRadius="24"
+                Command="{x:Bind Path=historyVM.InputCommand}"
+                ToolTipService.ToolTip="导入"
+                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
+                <FontIcon Glyph="&#xE8B5;" FontSize="18"/>
+            </Button>
+            <Button
+                Width="48"
+                Height="48"
+                Margin="0,12,0,0"
+                Windows10version1809:CornerRadius="24"
+                Command="{x:Bind Path=historyVM.CleanCommand}"
+                ToolTipService.ToolTip="清空"
+                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
                 <SymbolIcon Symbol="Delete" />
-
             </Button>
             <Button
                 Width="48"
@@ -95,10 +114,9 @@
                 Margin="0,12,0,0"
                 Windows10version1809:CornerRadius="24"
                 Command="{x:Bind Path=historyVM.RefreshCommand}"
+                ToolTipService.ToolTip="刷新"
                 Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-
                 <SymbolIcon Symbol="Refresh" />
-
             </Button>
         </StackPanel>
     </Grid>
