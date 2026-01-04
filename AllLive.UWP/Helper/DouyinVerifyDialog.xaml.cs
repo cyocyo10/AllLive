@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using Windows.UI.Xaml.Controls;
 using Windows.Web.Http.Filters;
+using Microsoft.Web.WebView2.Core;
 
 namespace AllLive.UWP.Helper
 {
@@ -15,23 +16,37 @@ namespace AllLive.UWP.Helper
             this.InitializeComponent();
             _url = url;
             
-            webView.NavigationStarting += WebView_NavigationStarting;
-            webView.NavigationCompleted += WebView_NavigationCompleted;
-            
-            // 加载验证页面
-            webView.Navigate(new Uri(url));
+            InitWebView();
         }
 
-        private void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        private async void InitWebView()
+        {
+            try
+            {
+                await webView2.EnsureCoreWebView2Async();
+                
+                webView2.NavigationStarting += WebView2_NavigationStarting;
+                webView2.NavigationCompleted += WebView2_NavigationCompleted;
+                
+                webView2.Source = new Uri(_url);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log($"[DouyinVerify] WebView2初始化失败: {ex.Message}", LogType.ERROR, ex);
+                loadingRing.IsActive = false;
+                tipText.Text = "WebView2初始化失败，请确保已安装Edge WebView2运行时";
+            }
+        }
+
+        private void WebView2_NavigationStarting(Microsoft.UI.Xaml.Controls.WebView2 sender, CoreWebView2NavigationStartingEventArgs args)
         {
             loadingRing.IsActive = true;
         }
 
-        private void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+        private void WebView2_NavigationCompleted(Microsoft.UI.Xaml.Controls.WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
         {
             loadingRing.IsActive = false;
             
-            // 获取当前页面的 Cookie
             try
             {
                 var filter = new HttpBaseProtocolFilter();
@@ -45,7 +60,7 @@ namespace AllLive.UWP.Helper
                 }
                 
                 VerifiedCookie = sb.ToString().TrimEnd(';');
-                LogHelper.Log($"[DouyinVerify] 获取到Cookie: {VerifiedCookie?.Substring(0, Math.Min(100, VerifiedCookie?.Length ?? 0))}...", LogType.DEBUG);
+                LogHelper.Log($"[DouyinVerify] Cookie长度: {VerifiedCookie?.Length ?? 0}", LogType.DEBUG);
             }
             catch (Exception ex)
             {
