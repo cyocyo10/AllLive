@@ -215,7 +215,7 @@ namespace AllLive.UWP.ViewModels
                             AddTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.M")
                         });
                     }
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(items);
+                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(items, Newtonsoft.Json.Formatting.Indented);
                     await FileIO.WriteTextAsync(file, json);
                     Utils.ShowMessageToast("导出成功");
                 }
