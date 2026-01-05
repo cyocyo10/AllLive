@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Windows.ApplicationModel.DataTransfer;
@@ -46,20 +46,29 @@ namespace AllLive.UWP.Views
 
             if (selectedTag == "auto")
             {
-                // 自动识别
                 (site, roomId) = ParseInput(input);
             }
             else
             {
-                // 指定平台
-                var siteType = selectedTag switch
+                Helper.LiveSite siteType;
+                switch (selectedTag)
                 {
-                    "douyin" => LiveSite.Douyin,
-                    "bilibili" => LiveSite.Bilibili,
-                    "huya" => LiveSite.Huya,
-                    "douyu" => LiveSite.Douyu,
-                    _ => LiveSite.Douyin
-                };
+                    case "douyin":
+                        siteType = Helper.LiveSite.Douyin;
+                        break;
+                    case "bilibili":
+                        siteType = Helper.LiveSite.Bilibili;
+                        break;
+                    case "huya":
+                        siteType = Helper.LiveSite.Huya;
+                        break;
+                    case "douyu":
+                        siteType = Helper.LiveSite.Douyu;
+                        break;
+                    default:
+                        siteType = Helper.LiveSite.Douyin;
+                        break;
+                }
                 site = MainVM.Sites.FirstOrDefault(s => s.SiteType == siteType);
                 roomId = ExtractRoomId(input);
             }
@@ -77,42 +86,42 @@ namespace AllLive.UWP.Views
 
         private (Site site, string roomId) ParseInput(string input)
         {
-            // 抖音 https://live.douyin.com/123456
+            // 抖音
             var douyinMatch = Regex.Match(input, @"live\.douyin\.com/(\d+)");
             if (douyinMatch.Success)
             {
-                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == LiveSite.Douyin), 
+                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == Helper.LiveSite.Douyin), 
                         douyinMatch.Groups[1].Value);
             }
 
-            // B站 https://live.bilibili.com/123456
+            // B站
             var biliMatch = Regex.Match(input, @"live\.bilibili\.com/(\d+)");
             if (biliMatch.Success)
             {
-                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == LiveSite.Bilibili), 
+                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == Helper.LiveSite.Bilibili), 
                         biliMatch.Groups[1].Value);
             }
 
-            // 虎牙 https://www.huya.com/xxx
+            // 虎牙
             var huyaMatch = Regex.Match(input, @"huya\.com/(\w+)");
             if (huyaMatch.Success)
             {
-                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == LiveSite.Huya), 
+                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == Helper.LiveSite.Huya), 
                         huyaMatch.Groups[1].Value);
             }
 
-            // 斗鱼 https://www.douyu.com/123456
+            // 斗鱼
             var douyuMatch = Regex.Match(input, @"douyu\.com/(\d+)");
             if (douyuMatch.Success)
             {
-                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == LiveSite.Douyu), 
+                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == Helper.LiveSite.Douyu), 
                         douyuMatch.Groups[1].Value);
             }
 
             // 纯数字默认抖音
             if (Regex.IsMatch(input, @"^\d+$"))
             {
-                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == LiveSite.Douyin), input);
+                return (MainVM.Sites.FirstOrDefault(s => s.SiteType == Helper.LiveSite.Douyin), input);
             }
 
             return (null, null);
@@ -120,13 +129,11 @@ namespace AllLive.UWP.Views
 
         private string ExtractRoomId(string input)
         {
-            // 从URL提取数字或字母数字
             var match = Regex.Match(input, @"/(\w+)/?$");
             if (match.Success)
             {
                 return match.Groups[1].Value;
             }
-            // 直接返回输入（可能就是房间号）
             return Regex.Replace(input, @"[^\w]", "");
         }
 
