@@ -113,7 +113,7 @@ namespace AllLive.UWP.ViewModels
                             RoomID = item.RoomId,
                             UserName = item.UserName,
                             Photo = item.Face,
-                            WatchTime = DateTime.TryParse(item.WatchTime, out var dt) ? dt : DateTime.Now
+                            WatchTime = DateTime.TryParse(item.UpdateTime, out var dt) ? dt : DateTime.Now
                         });
                     }
                     Utils.ShowMessageToast("导入成功");
@@ -166,7 +166,7 @@ namespace AllLive.UWP.ViewModels
                             RoomId = item.RoomID,
                             UserName = item.UserName,
                             Face = item.Photo,
-                            WatchTime = item.WatchTime.ToString("yyyy-MM-dd HH:mm:ss")
+                            UpdateTime = item.WatchTime.ToString("yyyy-MM-dd HH:mm:ss")
                         });
                     }
                     var json = JsonConvert.SerializeObject(items, Formatting.Indented);
@@ -177,48 +177,6 @@ namespace AllLive.UWP.ViewModels
                 {
                     HandleError(ex);
                     Utils.ShowMessageToast("导出失败");
-                }
-            }
-        }
-    }
-
-    public class HistoryJsonItem
-    {
-        [JsonProperty("siteId")]
-        public string SiteId;
-
-        [JsonProperty("id")]
-        public string Id;
-
-        [JsonProperty("roomId")]
-        public string RoomId;
-
-        [JsonProperty("userName")]
-        public string UserName;
-
-        [JsonProperty("face")]
-        public string Face;
-
-        [JsonProperty("watchTime")]
-        public string WatchTime;
-
-        [JsonIgnore]
-        public string SiteName
-        {
-            get
-            {
-                switch (SiteId)
-                {
-                    case "bilibili":
-                        return "哔哩哔哩直播";
-                    case "douyu":
-                        return "斗鱼直播";
-                    case "huya":
-                        return "虎牙直播";
-                    case "douyin":
-                        return "抖音直播";
-                    default:
-                        return "未知";
                 }
             }
         }
