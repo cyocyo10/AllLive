@@ -103,9 +103,14 @@ namespace AllLive.UWP.ViewModels
                 var currentCount = System.Threading.Interlocked.Increment(ref loadedCount);
                 if (currentCount == Items.Count)
                 {
-                    LoaddingLiveStatus = false;
-                    // 排序：直播 > 回放 > 未直播
-                    Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => (int)x.LiveStatus));
+                    // 切换到UI线程更新集合
+                    await Windows.ApplicationModel.Core.CoreApplication.MainView.Dispatcher.RunAsync(
+                        Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    {
+                        LoaddingLiveStatus = false;
+                        // 排序：直播 > 回放 > 未直播
+                        Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => (int)x.LiveStatus));
+                    });
                 }
             }
         }
