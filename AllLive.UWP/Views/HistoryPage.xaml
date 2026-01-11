@@ -11,8 +11,35 @@
     mc:Ignorable="d">
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid Padding="16,8">
+            <TextBlock FontSize="24">观看历史</TextBlock>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Command="{x:Bind Path=historyVM.RefreshCommand}" Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon
+                            FontFamily="{StaticResource SegoeFluent}"
+                            FontSize="14"
+                            Glyph="&#xE72C;" />
+                        <TextBlock Margin="8,0,0,0">刷新列表</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button Margin="8,0" Command="{x:Bind Path=historyVM.InputCommand}">导入列表</Button>
+                <Button Command="{x:Bind Path=historyVM.OutputCommand}">导出列表</Button>
+                <Button Margin="8,0,0,0" Command="{x:Bind Path=historyVM.CleanCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <SymbolIcon Symbol="Delete" />
+                        <TextBlock Margin="8,0,0,0">清空</TextBlock>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
         <controls:MyAdaptiveGridView
-            Margin="8"
+            Grid.Row="1"
+            Margin="8,0,8,8"
             CanLoadMore="False"
             DesiredWidth="400"
             IsItemClickEnabled="True"
@@ -69,55 +96,12 @@
             </controls:MyAdaptiveGridView.ItemTemplate>
         </controls:MyAdaptiveGridView>
         <TextBlock
+            Grid.Row="1"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Foreground="Gray"
             Visibility="{x:Bind Path=historyVM.IsEmpty, Mode=OneWay}">
             这里还什么都没有~
         </TextBlock>
-        <StackPanel
-            Margin="12"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Bottom">
-            <Button
-                Width="48"
-                Height="48"
-                Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=historyVM.OutputCommand}"
-                ToolTipService.ToolTip="导出"
-                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-                <FontIcon Glyph="&#xEDE1;" FontSize="18"/>
-            </Button>
-            <Button
-                Width="48"
-                Height="48"
-                Margin="0,12,0,0"
-                Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=historyVM.InputCommand}"
-                ToolTipService.ToolTip="导入"
-                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-                <FontIcon Glyph="&#xE8B5;" FontSize="18"/>
-            </Button>
-            <Button
-                Width="48"
-                Height="48"
-                Margin="0,12,0,0"
-                Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=historyVM.CleanCommand}"
-                ToolTipService.ToolTip="清空"
-                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-                <SymbolIcon Symbol="Delete" />
-            </Button>
-            <Button
-                Width="48"
-                Height="48"
-                Margin="0,12,0,0"
-                Windows10version1809:CornerRadius="24"
-                Command="{x:Bind Path=historyVM.RefreshCommand}"
-                ToolTipService.ToolTip="刷新"
-                Visibility="{x:Bind Path=historyVM.Loading, Mode=OneWay, Converter={StaticResource displayConvert}}">
-                <SymbolIcon Symbol="Refresh" />
-            </Button>
-        </StackPanel>
     </Grid>
 </Page>

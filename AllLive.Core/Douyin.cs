@@ -28,14 +28,6 @@ namespace AllLive.Core
         private const string REFERER = "https://live.douyin.com";
         private const string AUTHORITY = "live.douyin.com";
 
-        /// <summary>
-        /// 验证处理器，用于处理抖音风控验证
-        /// </summary>
-        public static IDouyinVerifyHandler VerifyHandler { get; set; }
-
-        // 验证后的搜索 Cookie
-        private static string _verifiedSearchCookie;
-
         Dictionary<string, string> headers = new Dictionary<string, string>
         {
             { "User-Agent", USER_AGENT },
@@ -476,49 +468,6 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// 获取搜索页面的 Cookie (www.douyin.com 域名)
-        /// </summary>
-        private async Task<string> GetSearchCookie(string keyword)
-        {
-            try
-            {
-                var searchUrl = $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live";
-                var requestHeaders = new Dictionary<string, string>
-                {
-                    { "User-Agent", USER_AGENT },
-                    { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
-                };
-                
-                var resp = await HttpUtil.Head(searchUrl, requestHeaders);
-                var cookieBuilder = new StringBuilder();
-                
-                if (resp.Headers.TryGetValues("Set-Cookie", out var cookies))
-                {
-                    foreach (var item in cookies)
-                    {
-                        var cookie = item.Split(';')[0];
-                        if (cookie.Contains("ttwid") || cookie.Contains("__ac_nonce") || 
-                            cookie.Contains("msToken") || cookie.Contains("s_v_web_id") ||
-                            cookie.Contains("passport_csrf_token"))
-                        {
-                            cookieBuilder.Append(cookie).Append(';');
-                        }
-                    }
-                }
-                
-                var result = cookieBuilder.ToString().TrimEnd(';');
-                Trace.WriteLine($"[GetSearchCookie] 获取到Cookie: {TruncateForLog(result, 100)}");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine($"[GetSearchCookie] 异常: {ex.Message}");
-                // 失败时回退到 live.douyin.com 的 cookie
-                return (await GetRequestHeaders(forceRefresh: true))["Cookie"];
-            }
-        }
-
-        /// <summary>
         /// ��ȡ�û���ΨһID
         /// ��ʱ����
         /// </summary>
@@ -690,213 +639,130 @@ namespace AllLive.Core
             return Task.FromResult(qn.Data as List<string>);
         }
 
-        public Task<LiveSearchResult> Search(string keyword, int page = 1)
+        /// <summary>
+        /// 搜索直播间 - 支持房间号、直播链接、短链接
+        /// </summary>
+        public async Task<LiveSearchResult> Search(string keyword, int page = 1)
         {
-            return SearchInternal(keyword, page, useVerifiedCookie: false);
-        }
-
-        private async Task<LiveSearchResult> SearchInternal(string keyword, int page, bool useVerifiedCookie)
-        {
-            Trace.WriteLine($"========== Douyin.Search 开始 ==========");
-            Trace.WriteLine($"[Search] keyword={keyword}, page={page}, useVerifiedCookie={useVerifiedCookie}");
-            var query = new Dictionary<string, string>
+            // 只处理第一页，因为是单个房间查询
+            if (page > 1)
             {
-                { "device_platform", "webapp" },
-                { "aid", "6383" },
-                { "channel", "channel_pc_web" },
-                { "search_channel", "aweme_live" },
-                { "keyword", keyword },
-                { "search_source", "switch_tab" },
-                { "query_correct_type", "1" },
-                { "is_filter_search", "0" },
-                { "from_group_id", "" },
-                { "offset", ((page - 1) * 10).ToString() },
-                { "count", "10" },
-                { "pc_client_type", "1" },
-                { "version_code", "170400" },
-                { "version_name", "17.4.0" },
-                { "cookie_enabled", "true" },
-                { "screen_width", "1980" },
-                { "screen_height", "1080" },
-                { "browser_language", "zh-CN" },
-                { "browser_platform", "Win32" },
-                { "browser_name", "Edge" },
-                { "browser_version", "125.0.0.0" },
-                { "browser_online", "true" },
-                { "engine_name", "Blink" },
-                { "engine_version", "125.0.0.0" },
-                { "os_name", "Windows" },
-                { "os_version", "10" },
-                { "cpu_core_num", "12" },
-                { "device_memory", "8" },
-                { "platform", "PC" },
-                { "downlink", "10" },
-                { "effective_type", "4g" },
-                { "round_trip_time", "100" },
-                { "webid", "7382872326016435738" }
-            };
-
-            var requestUrl = $"https://www.douyin.com/aweme/v1/web/live/search/?{Utils.BuildQueryString(query)}";
-            Trace.WriteLine($"[Search] 原始URL: {TruncateForLog(requestUrl, 150)}");
-            
-            requestUrl = await GetABougs(requestUrl);
-            Trace.WriteLine($"[Search] 签名后URL: {TruncateForLog(requestUrl, 200)}");
-            
-            // 优先使用验证后的 Cookie
-            string searchCookie;
-            if (useVerifiedCookie && !string.IsNullOrEmpty(_verifiedSearchCookie))
-            {
-                searchCookie = _verifiedSearchCookie;
-                Trace.WriteLine($"[Search] 使用验证后的Cookie");
-            }
-            else
-            {
-                searchCookie = await GetSearchCookie(keyword);
-            }
-            Trace.WriteLine($"[Search] Cookie: {TruncateForLog(searchCookie, 100)}");
-            
-            var searchHeaders = new Dictionary<string, string>
-            {
-                { "authority", "www.douyin.com" },
-                { "accept", "application/json, text/plain, */*" },
-                { "accept-language", "zh-CN,zh;q=0.9,en;q=0.8" },
-                { "cookie", searchCookie },
-                { "priority", "u=1, i" },
-                { "referer", $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live" },
-                { "sec-ch-ua", "\"Microsoft Edge\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"" },
-                { "sec-ch-ua-mobile", "?0" },
-                { "sec-ch-ua-platform", "\"Windows\"" },
-                { "sec-fetch-dest", "empty" },
-                { "sec-fetch-mode", "cors" },
-                { "sec-fetch-site", "same-origin" },
-                { "user-agent", USER_AGENT }
-            };
-
-            Trace.WriteLine($"[Search] 开始请求...");
-            var resp = await HttpUtil.GetString(requestUrl, searchHeaders);
-            Trace.WriteLine($"[Search] 响应长度: {resp?.Length ?? 0}");
-            Trace.WriteLine($"[Search] 响应预览: {TruncateForLog(resp, 300)}");
-
-            if (string.IsNullOrWhiteSpace(resp))
-            {
-                Trace.WriteLine("[Search] ����: ��ӦΪ��");
-                return new LiveSearchResult()
-                {
-                    HasMore = false,
-                    Rooms = new List<LiveRoomItem>()
-                };
+                return new LiveSearchResult() { HasMore = false, Rooms = new List<LiveRoomItem>() };
             }
 
-            JObject json;
+            var roomId = await ParseRoomId(keyword);
+            if (string.IsNullOrEmpty(roomId))
+            {
+                return new LiveSearchResult() { HasMore = false, Rooms = new List<LiveRoomItem>() };
+            }
+
             try
             {
-                json = JObject.Parse(resp);
-            }
-            catch (Exception parseEx)
-            {
-                Trace.WriteLine($"[Search] JSON解析失败: {parseEx.Message}");
-                Trace.WriteLine($"[Search] 原始响应: {TruncateForLog(resp)}");
-                return new LiveSearchResult()
+                var detail = await GetRoomDetail(roomId);
+                var items = new List<LiveRoomItem>
                 {
-                    HasMore = false,
-                    Rooms = new List<LiveRoomItem>()
-                };
-            }
-
-            var statusCode = json["status_code"]?.ToObject<int?>() ?? 0;
-            var statusMsg = json["status_msg"]?.ToString();
-            Trace.WriteLine($"[Search] API状态: code={statusCode}, msg={statusMsg}");
-
-            // 检查是否需要验证
-            var searchNilType = json["search_nil_info"]?["search_nil_type"]?.ToString();
-            if (searchNilType == "verify_check")
-            {
-                Trace.WriteLine("[Search] 检测到需要验证 (verify_check)");
-                
-                if (VerifyHandler != null)
-                {
-                    Trace.WriteLine("[Search] 触发验证流程...");
-                    var verifyUrl = $"https://www.douyin.com/search/{Uri.EscapeDataString(keyword)}?type=live";
-                    var verifiedCookie = await VerifyHandler.VerifyAsync(verifyUrl);
-                    
-                    if (!string.IsNullOrEmpty(verifiedCookie))
+                    new LiveRoomItem()
                     {
-                        Trace.WriteLine("[Search] 验证成功，保存 Cookie 并重试搜索");
-                        _verifiedSearchCookie = verifiedCookie;
-                        // 重试搜索（不再触发验证，避免死循环）
-                        return await SearchInternal(keyword, page, useVerifiedCookie: true);
+                        RoomID = detail.RoomID,
+                        Title = detail.Title,
+                        Cover = detail.Cover,
+                        UserName = detail.UserName,
+                        Online = detail.Online,
                     }
-                    else
-                    {
-                        Trace.WriteLine("[Search] 验证失败或用户取消");
-                    }
-                }
-                else
-                {
-                    Trace.WriteLine("[Search] 未设置验证处理器，无法完成验证");
-                }
-                
-                return new LiveSearchResult()
-                {
-                    HasMore = false,
-                    Rooms = new List<LiveRoomItem>()
                 };
+                return new LiveSearchResult() { HasMore = false, Rooms = items };
             }
-
-            var dataToken = json["data"];
-            JArray livesArray = dataToken as JArray;
-            if (livesArray == null)
+            catch (Exception ex)
             {
-                livesArray = dataToken?["data"] as JArray;
+                Trace.WriteLine($"[Search] 获取房间信息失败: {ex.Message}");
+                return new LiveSearchResult() { HasMore = false, Rooms = new List<LiveRoomItem>() };
             }
-
-            if (livesArray == null)
-            {
-                Trace.WriteLine("[Search] 错误: 数据结构异常，找不到直播列表");
-                Trace.WriteLine($"[Search] JSON结构: {TruncateForLog(json.ToString(Formatting.None))}");
-                return new LiveSearchResult()
-                {
-                    HasMore = false,
-                    Rooms = new List<LiveRoomItem>()
-                };
-            }
-
-            Trace.WriteLine($"[Search] 找到 {livesArray.Count} 条数据");
-            var items = new List<LiveRoomItem>();
-            foreach (var item in livesArray)
-            {
-                var rawData = item["lives"]?["rawdata"]?.ToString();
-                if (string.IsNullOrEmpty(rawData))
-                {
-                    continue;
-                }
-
-                var itemData = JObject.Parse(rawData);
-                var roomItem = new LiveRoomItem()
-                {
-                    RoomID = itemData["owner"]?["web_rid"]?.ToString() ?? string.Empty,
-                    Title = itemData["title"]?.ToString() ?? string.Empty,
-                    Cover = itemData["cover"]?["url_list"]?.FirstOrDefault()?.ToString() ?? string.Empty,
-                    UserName = itemData["owner"]?["nickname"]?.ToString() ?? string.Empty,
-                    Online = itemData["stats"]?["total_user"]?.ToObject<int>() ?? 0,
-                };
-                if (!string.IsNullOrEmpty(roomItem.RoomID))
-                {
-                    items.Add(roomItem);
-                }
-            }
-
-            var hasMoreToken = (dataToken as JObject)?["has_more"];
-            var hasMore = hasMoreToken?.ToObject<int?>() == 1 || items.Count >= 10;
-
-            Trace.WriteLine($"[Search] �������: ��Ч���={items.Count}, hasMore={hasMore}");
-            Trace.WriteLine($"========== Douyin.Search ���� ==========");
-            return new LiveSearchResult()
-            {
-                HasMore = hasMore,
-                Rooms = items
-            };
         }
+
+        /// <summary>
+        /// 解析房间号 - 支持多种格式
+        /// </summary>
+        private async Task<string> ParseRoomId(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return null;
+            }
+
+            input = input.Trim();
+
+            // 1. 纯数字房间号
+            if (Regex.IsMatch(input, @"^\d+$"))
+            {
+                return input;
+            }
+
+            // 2. 抖音直播链接: https://live.douyin.com/123456789
+            var liveMatch = Regex.Match(input, @"live\.douyin\.com/(\d+)");
+            if (liveMatch.Success)
+            {
+                return liveMatch.Groups[1].Value;
+            }
+
+            // 3. 抖音短链接: https://v.douyin.com/xxxxx
+            if (input.Contains("v.douyin.com"))
+            {
+                try
+                {
+                    var realUrl = await ResolveShortUrl(input);
+                    if (!string.IsNullOrEmpty(realUrl))
+                    {
+                        var match = Regex.Match(realUrl, @"live\.douyin\.com/(\d+)");
+                        if (match.Success)
+                        {
+                            return match.Groups[1].Value;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"[ParseRoomId] 解析短链接失败: {ex.Message}");
+                }
+            }
+
+            // 4. 从文本中提取链接
+            var urlMatch = Regex.Match(input, @"https?://[^\s]+");
+            if (urlMatch.Success && urlMatch.Value != input)
+            {
+                return await ParseRoomId(urlMatch.Value);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 解析抖音短链接
+        /// </summary>
+        private async Task<string> ResolveShortUrl(string shortUrl)
+        {
+            try
+            {
+                var handler = new HttpClientHandler
+                {
+                    AllowAutoRedirect = false
+                };
+                using (var client = new HttpClient(handler))
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                    var response = await client.GetAsync(shortUrl);
+                    if (response.Headers.Location != null)
+                    {
+                        return response.Headers.Location.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[ResolveShortUrl] 异常: {ex.Message}");
+            }
+            return null;
+        }
+
         public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {
             var result = await GetRoomDetail(roomId: roomId);
@@ -905,16 +771,6 @@ namespace AllLive.Core
         public Task<List<LiveSuperChatMessage>> GetSuperChatMessages(object roomId)
         {
             return Task.FromResult(new List<LiveSuperChatMessage>());
-        }
-
-        private static string TruncateForLog(string value, int max = 400)
-        {
-            if (string.IsNullOrEmpty(value) || value.Length <= max)
-            {
-                return value;
-            }
-
-            return value.Substring(0, max) + "...";
         }
 
         private string GenerateRandomNumber(int length)
