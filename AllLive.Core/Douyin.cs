@@ -42,7 +42,7 @@ namespace AllLive.Core
                 return headers;
             }
             
-            // ǿ��ˢ��ʱ��������ɵ� Cookie������ʹ�ù��ڵ� __ac_nonce
+            // Force refresh: clear old Cookie to avoid using expired __ac_nonce
             if (forceRefresh)
             {
                 headers.Remove("Cookie");
@@ -51,7 +51,7 @@ namespace AllLive.Core
             
             try
             {
-                // ����һ������ Cookie �� headers ������������ȷ����ȡȫ�µ� Cookie
+                // Create new headers without Cookie to ensure getting fresh Cookie
                 var requestHeaders = new Dictionary<string, string>
                 {
                     { "User-Agent", USER_AGENT },
@@ -91,10 +91,10 @@ namespace AllLive.Core
             string renderData = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(renderData))
             {
-                throw new Exception("�޷���ȡ��������");
+                throw new Exception("Unable to get category data");
             }
             renderData = renderData.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
-            // ����JSON����
+            // Parse JSON data
             var renderDataJson = JObject.Parse(renderData);
             foreach (var item in renderDataJson["categoryData"])
             {
@@ -158,7 +158,7 @@ namespace AllLive.Core
             Trace.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Trace.WriteLine($"Douyin.GetCategoryRooms ��Ч��Ӧ: {resp}");
+                Trace.WriteLine($"Douyin.GetCategoryRooms invalid response: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -218,7 +218,7 @@ namespace AllLive.Core
             Trace.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
             {
-                Trace.WriteLine($"Douyin.GetRecommendRooms ��Ч��Ӧ: {resp}");
+                Trace.WriteLine($"Douyin.GetRecommendRooms invalid response: {resp}");
                 return new LiveCategoryResult()
                 {
                     HasMore = false,
@@ -342,11 +342,10 @@ namespace AllLive.Core
 
         private async Task<LiveRoomDetail> GetRoomDetailByWebRidApi(string webRid)
         {
-            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ��ʼ ==========");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi Start ==========");
             Trace.WriteLine($"[RoomDetail] webRid={webRid}");
             
-            // ��ȡ������Ϣ
-            //var data = await _getRoomDataByApi(webRid);
+            // Get room data
             var data = await GetRoomDataApi(webRid);
             var roomData = data["data"][0];
 
@@ -354,9 +353,8 @@ namespace AllLive.Core
             var roomId = roomData["id_str"].ToString();
             Trace.WriteLine($"[RoomDetail] roomId={roomId}");
 
-            // ��ȡ�û�ΨһID�����ڵ�Ļ����
-            // �ƺ�����������Ǳ���ģ����������һ��
-            //var userUniqueId = await GetUserUniqueId(webRid);
+            // Get user unique ID for danmaku
+            // Seems random number works fine
             var userUniqueId = GenerateRandomNumber(12).ToString();
             Trace.WriteLine($"[RoomDetail] userUniqueId={userUniqueId}");
 
@@ -365,14 +363,14 @@ namespace AllLive.Core
             var roomStatus = roomData["status"].ToObject<int>() == 2;
             Trace.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
 
-            // ��Ҫ��Ϊ�˻�ȡcookie,���ڵ�Ļwebsocket����
-            Trace.WriteLine($"[RoomDetail] ��ȡCookie (forceRefresh=true)...");
+            // Need to get cookie for danmaku websocket
+            Trace.WriteLine($"[RoomDetail] Getting Cookie (forceRefresh=true)...");
             var headers = await GetRequestHeaders(forceRefresh: true);
             var cookie = headers.ContainsKey("Cookie") ? headers["Cookie"] : "";
-            Trace.WriteLine($"[RoomDetail] Cookie����={cookie.Length}");
-            Trace.WriteLine($"[RoomDetail] CookieԤ��={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
+            Trace.WriteLine($"[RoomDetail] Cookie length={cookie.Length}");
+            Trace.WriteLine($"[RoomDetail] Cookie preview={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
             
-            Trace.WriteLine($"========== GetRoomDetailByWebRidApi ���� ==========");
+            Trace.WriteLine($"========== GetRoomDetailByWebRidApi Done ==========");
             return new LiveRoomDetail()
             {
                 RoomID = webRid,
@@ -794,7 +792,7 @@ namespace AllLive.Core
 
         private async Task<string> GetABougs(string url)
         {
-            Trace.WriteLine($"[GetABougs] ��ʼ����ǩ��");
+            Trace.WriteLine($"[GetABougs] Start signing");
             try
             {
                 var uri = new Uri(url);
@@ -805,18 +803,18 @@ namespace AllLive.Core
                     ? $"msToken={msToken}"
                     : $"{rawQuery}&msToken={msToken}";
 
-                Trace.WriteLine($"[GetABougs] queryForSign����={queryForSign.Length}");
-                Trace.WriteLine($"[GetABougs] ���� DouyinABogusHelper.GenerateAsync...");
+                Trace.WriteLine($"[GetABougs] queryForSign length={queryForSign.Length}");
+                Trace.WriteLine($"[GetABougs] Calling DouyinABogusHelper.GenerateAsync...");
                 
                 var aBogus = await DouyinABogusHelper.GenerateAsync(queryForSign, USER_AGENT).ConfigureAwait(false);
                 
-                Trace.WriteLine($"[GetABougs] a_bogus���: '{aBogus}'");
-                Trace.WriteLine($"[GetABougs] a_bogus����: {aBogus?.Length ?? 0}");
-                Trace.WriteLine($"[GetABougs] a_bogus�Ƿ�Ϊ��: {string.IsNullOrEmpty(aBogus)}");
+                Trace.WriteLine($"[GetABougs] a_bogus result: '{aBogus}'");
+                Trace.WriteLine($"[GetABougs] a_bogus length: {aBogus?.Length ?? 0}");
+                Trace.WriteLine($"[GetABougs] a_bogus isEmpty: {string.IsNullOrEmpty(aBogus)}");
                 
                 if (string.IsNullOrEmpty(aBogus))
                 {
-                    Trace.WriteLine("[GetABougs] ����: a_bogusΪ�գ�ʹ����ǩ��URL");
+                    Trace.WriteLine("[GetABougs] Warning: a_bogus is empty, using unsigned URL");
                     var fallbackQuery = string.IsNullOrEmpty(rawQuery)
                         ? $"msToken={Uri.EscapeDataString(msToken)}"
                         : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}";
@@ -827,12 +825,12 @@ namespace AllLive.Core
                     ? $"msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}"
                     : $"{rawQuery}&msToken={Uri.EscapeDataString(msToken)}&a_bogus={Uri.EscapeDataString(aBogus)}";
 
-                Trace.WriteLine($"[GetABougs] ǩ���ɹ�");
+                Trace.WriteLine($"[GetABougs] Sign success");
                 return $"{baseUrl}?{finalQuery}";
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"[GetABougs] �쳣: {ex.Message}");
+                Trace.WriteLine($"[GetABougs] Exception: {ex.Message}");
                 Trace.WriteLine($"[GetABougs] StackTrace: {ex.StackTrace}");
                 return url;
             }
