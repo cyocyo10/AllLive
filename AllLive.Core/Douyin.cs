@@ -248,12 +248,12 @@ namespace AllLive.Core
         }
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
-            // ������roomId��һ����webRid��һ����roomId
-            // roomId��һ���Եģ��û�ÿ�����¿�����������һ���µ�roomId
-            // roomIdһ�㳤��Ϊ19λ�����磺7376429659866598196
-            // webRid�ǹ̶��ģ��û�ÿ�ο�������ͬһ��webRid
-            // webRidһ�㳤��Ϊ11-12λ�����磺416144012050
-            // ����򵥽����жϣ����roomId����С��15������Ϊ��webRid
+            // There are two types of IDs: webRid and roomId
+            // roomId is temporary, user gets a new roomId each time they start streaming
+            // roomId is usually 19 digits, e.g.: 7376429659866598196
+            // webRid is fixed, user has the same webRid for each stream
+            // webRid is usually 11-12 digits, e.g.: 416144012050
+            // Simple check: if length <= 16, treat as webRid
             if (roomId.ToString().Length <= 16)
             {
                 var webRid = roomId as string;
@@ -263,34 +263,32 @@ namespace AllLive.Core
             return await GetRoomDetailByRoomID(roomId as string);
         }
         /// <summary>
-        /// ͨ��RoomId��ȡֱ��������
+        /// Get room detail by RoomId
         /// </summary>
         /// <param name="roomId">
-        /// roomId��һ���Եģ��û�ÿ�����¿�����������һ���µ�roomId��
-        /// roomIdһ�㳤��Ϊ19λ�����磺7376429659866598196
+        /// roomId is temporary, user gets a new roomId each time they start streaming.
+        /// roomId is usually 19 digits, e.g.: 7376429659866598196
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByRoomID(string roomId)
         {
             var roomData = await GetRoomDataByRoomID(roomId);
-            // ͨ��������Ϣ��ȡWebRid
+            // Get WebRid from room info
             var webRid = roomData["data"]["room"]["owner"]["web_rid"].ToString();
-            // ��ȡ�û�ΨһID�����ڵ�Ļ����
-            // �ƺ�����������Ǳ���ģ����������һ��
-            //var userUniqueId = await GetUserUniqueId(webRid);
+            // Get user unique ID for danmaku
+            // Random number seems to work fine
             var userUniqueId = GenerateRandomNumber(12).ToString();
             var room = roomData["data"]["room"];
             var owner = room["owner"];
             var status = room["status"].ToObject<int>();
-            // roomId��һ���Եģ��û�ÿ�����¿�����������һ���µ�roomId
-            // �������roomId��Ӧ��ֱ����״̬����ֱ���У���ͨ��webRid��ȡֱ������Ϣ
+            // roomId is temporary, if status is 4 (not live), get room info by webRid
             if (status == 4)
             {
                 var result = await GetRoomDetailByWebRid(webRid);
                 return result;
             }
             var roomStatus = status == 2;
-            // ��Ҫ��Ϊ�˻�ȡcookie,���ڵ�Ļwebsocket����
+            // Need to get cookie for danmaku websocket
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -319,11 +317,11 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// ͨ��webRid��ȡֱ��������
+        /// Get room detail by webRid
         /// </summary>
         /// <param name="webRid">
-        /// webRid�ǹ̶��ģ��û�ÿ�ο�������ͬһ��webRid
-        /// webRidһ�㳤��Ϊ11-12λ�����磺416144012050
+        /// webRid is fixed, user has the same webRid for each stream.
+        /// webRid is usually 11-12 digits, e.g.: 416144012050
         /// </param>
         /// <returns></returns>
         private async Task<LiveRoomDetail> GetRoomDetailByWebRid(string webRid)
@@ -413,7 +411,7 @@ namespace AllLive.Core
             var anchor = roomData["roomStore"]["roomInfo"]["anchor"];
             var roomStatus = room["status"].ToObject<int>() == 2;
 
-            // ��Ҫ��Ϊ�˻�ȡcookie,���ڵ�Ļwebsocket����
+            // Need to get cookie for danmaku websocket
             var headers = await GetRequestHeaders(forceRefresh: true);
             return new LiveRoomDetail()
             {
@@ -444,9 +442,9 @@ namespace AllLive.Core
             };
         }
         /// <summary>
-        ///  ����ֱ����ǰ��Ҫ�Ȼ�ȡcookie
+        /// Get cookie before entering live room
         /// </summary>
-        /// <param name="webRid">ֱ����RID</param>
+        /// <param name="webRid">Live room RID</param>
         /// <returns></returns>
         private async Task<string> GetWebCookie(string webRid)
         {
@@ -466,8 +464,7 @@ namespace AllLive.Core
         }
 
         /// <summary>
-        /// ��ȡ�û���ΨһID
-        /// ��ʱ����
+        /// Get user unique ID (deprecated)
         /// </summary>
         /// <param name="webRid"></param>
         /// <returns></returns>
@@ -494,7 +491,7 @@ namespace AllLive.Core
             string json = match.Success ? match.Groups[0].Value : "";
             if (string.IsNullOrEmpty(json))
             {
-                throw new Exception("�޷���ȡֱ��������");
+                throw new Exception("Unable to get room data");
             }
             json = json.Trim().Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("]\\n", "");
             return JObject.Parse(json)["state"];
@@ -777,7 +774,7 @@ namespace AllLive.Core
             var sb = new StringBuilder();
             for (int i = 0; i < length; i++)
             {
-                // ��һλ����Ϊ0
+                // First digit should not be 0
                 if (i == 0)
                 {
                     sb.Append(random.Next(1, 9));
