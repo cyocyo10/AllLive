@@ -157,10 +157,6 @@
     <Compile Include="Helper\BiliAccount.cs" />
     <Compile Include="Helper\ExceptionHandler.cs" />
     <Compile Include="Helper\DatabaseHelper.cs" />
-    <Compile Include="Helper\DouyinVerifyHandler.cs" />
-    <Compile Include="Helper\DouyinVerifyDialog.xaml.cs">
-      <DependentUpon>DouyinVerifyDialog.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Helper\LogHelper.cs" />
     <Compile Include="Helper\WebViewDouyinScriptRunner.cs" />
     <Compile Include="Helper\LoggingDouyinScriptRunner.cs" />
@@ -305,10 +301,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\MessageToast.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Helper\DouyinVerifyDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

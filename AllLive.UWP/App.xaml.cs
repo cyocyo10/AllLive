@@ -204,9 +204,6 @@ namespace AllLive.UWP
             {
                 var dispatcher = Window.Current?.Dispatcher ?? CoreApplication.MainView?.Dispatcher;
                 AllLive.Core.Helper.DouyinScriptRuntime.Current = new LoggingDouyinScriptRunner(new WebViewDouyinScriptRunner(dispatcher));
-                
-                // 设置抖音验证处理器
-                AllLive.Core.Douyin.VerifyHandler = new DouyinVerifyHandler();
             }
             catch (Exception ex)
             {
