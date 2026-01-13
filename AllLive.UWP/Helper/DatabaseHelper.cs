@@ -44,18 +44,30 @@ watch_time DATETIME);
 
         public static void AddFavorite(FavoriteItem item)
         {
+            // 空值检查
+            if (string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
+            {
+                return;
+            }
+
             if (CheckFavorite(item.RoomID, item.SiteName)!=null) { return; }
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
             command.CommandText = "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);";
-            command.Parameters.AddWithValue("@user_name", item.UserName);
+            command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
             command.Parameters.AddWithValue("@site_name", item.SiteName);
-            command.Parameters.AddWithValue("@photo", item.Photo);
+            command.Parameters.AddWithValue("@photo", item.Photo ?? "");
             command.Parameters.AddWithValue("@room_id", item.RoomID);
             command.ExecuteReader();
         }
         public static long? CheckFavorite(string roomId, string siteName)
         {
+            // 空值检查
+            if (string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(siteName))
+            {
+                return null;
+            }
+
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
             command.CommandText = "SELECT * FROM Favorite WHERE room_id=@room_id and site_name=@site_name";
@@ -109,6 +121,12 @@ watch_time DATETIME);
 
         public static void AddHistory(HistoryItem item)
         {
+            // 空值检查，防止 SQLite 参数绑定失败
+            if (string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
+            {
+                return;
+            }
+
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
             var hisId = CheckHistory(item.RoomID, item.SiteName);
@@ -125,15 +143,21 @@ watch_time DATETIME);
             }
           
             command.CommandText = "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);";
-            command.Parameters.AddWithValue("@user_name", item.UserName);
+            command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
             command.Parameters.AddWithValue("@site_name", item.SiteName);
-            command.Parameters.AddWithValue("@photo", item.Photo);
+            command.Parameters.AddWithValue("@photo", item.Photo ?? "");
             command.Parameters.AddWithValue("@room_id", item.RoomID);
             command.Parameters.AddWithValue("@time", DateTime.Now);
             command.ExecuteReader();
         }
         public static long? CheckHistory(string roomId, string siteName)
         {
+            // 空值检查
+            if (string.IsNullOrEmpty(roomId) || string.IsNullOrEmpty(siteName))
+            {
+                return null;
+            }
+
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
             command.CommandText = "SELECT * FROM History WHERE room_id=@room_id and site_name=@site_name";
