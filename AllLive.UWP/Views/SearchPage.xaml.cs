@@ -66,7 +66,17 @@ namespace AllLive.UWP.Views
         private void MyAdaptiveGridView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as AllLive.Core.Models.LiveRoomItem;
-            var vm = (sender as MyAdaptiveGridView).DataContext as SearchItemVM;
+            if (item == null)
+            {
+                return;
+            }
+
+            var vm = (sender as MyAdaptiveGridView)?.DataContext as SearchItemVM;
+            if (vm?.site?.LiveSite == null)
+            {
+                return;
+            }
+
             MessageCenter.OpenLiveRoom(vm.site.LiveSite, item);
         }
 

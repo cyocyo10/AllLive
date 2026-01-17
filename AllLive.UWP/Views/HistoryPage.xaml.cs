@@ -61,7 +61,12 @@ namespace AllLive.UWP.Views
 
         private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
         {
-            var item = (sender as MenuFlyoutItem).DataContext as HistoryItem;
+            var item = (sender as MenuFlyoutItem)?.DataContext as HistoryItem;
+            if (item == null)
+            {
+                return;
+            }
+
             historyVM.RemoveItem(item);
         }
     }

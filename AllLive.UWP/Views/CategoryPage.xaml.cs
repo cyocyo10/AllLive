@@ -46,14 +46,25 @@ namespace AllLive.UWP.Views
         private void GridView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as LiveSubCategory;
+            if (item == null)
+            {
+                return;
+            }
+
+            var vm = pivot.SelectedItem as CategoryItemVM;
+            if (vm?.site?.LiveSite == null)
+            {
+                return;
+            }
+
             MessageCenter.NavigatePage(typeof(CategoryDetailPage), new PageArgs()
             {
-                Site = (pivot.SelectedItem as CategoryItemVM).site.LiveSite,
+                Site = vm.site.LiveSite,
                 Data = item
             });
             //(Window.Current.Content as Frame).Navigate(typeof(CategoryDetailPage), new PageArgs()
             //{
-            //    Site = (pivot.SelectedItem as CategoryItemVM).site.LiveSite,
+            //    Site = vm.site.LiveSite,
             //    Data = item
             //});
         }

@@ -1406,6 +1406,11 @@ namespace AllLive.UWP.Views
         private void XboxSuperChat_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as SuperChatItem;
+            if (item == null)
+            {
+                return;
+            }
+
             ContentDialog dialog = new ContentDialog
             {
                 Title = item.UserName,

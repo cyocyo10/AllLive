@@ -74,6 +74,11 @@ namespace AllLive.UWP.Views
         private void MyAdaptiveGridView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as AllLive.Core.Models.LiveRoomItem;
+            if (item == null || pageArgs?.Site == null)
+            {
+                return;
+            }
+
             MessageCenter.OpenLiveRoom(pageArgs.Site, item);
 
         }
