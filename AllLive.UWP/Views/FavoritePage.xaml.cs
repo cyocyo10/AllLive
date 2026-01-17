@@ -26,12 +26,11 @@ namespace AllLive.UWP.Views
     public sealed partial class FavoritePage : Page
     {
         readonly FavoriteVM favoriteVM;
-        private bool isEventSubscribed = false;
-        
         public FavoritePage()
         {
             favoriteVM = new FavoriteVM();
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
+            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent;
             this.InitializeComponent();
         }
 
@@ -44,35 +43,11 @@ namespace AllLive.UWP.Views
         {
             base.OnNavigatedTo(e);
 
-            // 订阅事件（只订阅一次）
-            if (!isEventSubscribed)
-            {
-                MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent;
-                isEventSubscribed = true;
-            }
-
             if(favoriteVM.Items.Count==0)
             {
                 favoriteVM.LoadData();
             }
 
-        }
-
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            base.OnNavigatedFrom(e);
-            
-            // 如果是后退导航（页面被销毁），取消事件订阅
-            if (e.NavigationMode == NavigationMode.Back)
-            {
-                if (isEventSubscribed)
-                {
-                    MessageCenter.UpdateFavoriteEvent -= MessageCenter_UpdateFavoriteEvent;
-                    isEventSubscribed = false;
-                }
-                // 禁用缓存，让页面被销毁
-                this.NavigationCacheMode = NavigationCacheMode.Disabled;
-            }
         }
 
         private void ls_ItemClick(object sender, ItemClickEventArgs e)

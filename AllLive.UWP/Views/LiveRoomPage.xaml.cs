@@ -56,6 +56,9 @@ namespace AllLive.UWP.Views
         private bool isMini = false;
         DispatcherTimer timer_focus;
         DispatcherTimer controlTimer;
+        
+        // 标志位：是否已经清理过资源
+        private bool isCleanedUp = false;
 
         public LiveRoomPage()
         {
@@ -123,6 +126,13 @@ namespace AllLive.UWP.Views
 
         private void CleanupEventSubscriptions()
         {
+            // 防止重复清理
+            if (isCleanedUp)
+            {
+                return;
+            }
+            isCleanedUp = true;
+            
             // 取消 ViewModel 事件订阅
             if (liveRoomVM != null)
             {
