@@ -337,6 +337,8 @@ namespace AllLive.UWP.ViewModels
                         item.CountdownTime = Convert.ToInt32(item.EndTime.Subtract(DateTime.Now).TotalSeconds);
                     }
                 });
+                scTimer?.Stop();
+                scTimer?.Dispose();
                 scTimer = new Timer(1000);
                 scTimer.Elapsed += (s, e) =>
                 {
@@ -528,6 +530,10 @@ namespace AllLive.UWP.ViewModels
         public async void Stop()
         {
             _messageProcessTimer?.Stop();
+            _messageProcessTimer?.Dispose();
+            scTimer?.Stop();
+            scTimer?.Dispose();
+            scTimer = null;
             // 清空消息队列
             while (_messageQueue.TryDequeue(out _)) { }
             Messages.Clear();

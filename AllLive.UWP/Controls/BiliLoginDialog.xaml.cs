@@ -37,6 +37,8 @@ namespace AllLive.UWP.Controls
         private void BiliLoginDialog_Unloaded(object sender, RoutedEventArgs e)
         {
             timer?.Close();
+            timer?.Dispose();
+            timer = null;
         }
 
         private void BiliLoginDialog_Loaded(object sender, RoutedEventArgs e)
@@ -155,6 +157,8 @@ namespace AllLive.UWP.Controls
                     txtStatus.Text = "二维码已过期";
                     qrcodeKey = "";
                     timer?.Close();
+                    timer?.Dispose();
+                    timer = null;
                 }
                 else if (code == 86090)
                 {
@@ -171,6 +175,7 @@ namespace AllLive.UWP.Controls
         private void StartPoll()
         {
             timer?.Close();
+            timer?.Dispose();
             timer = new Timer(3 * 1000);
             timer.Elapsed += (sender, e) =>
             {

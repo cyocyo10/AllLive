@@ -242,6 +242,9 @@ namespace AllLive.UWP.ViewModels
 
         public void DisconnectSignalR()
         {
+            timer?.Stop();
+            timer?.Dispose();
+            timer = null;
             connection?.DisposeAsync();
             _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
@@ -280,6 +283,7 @@ namespace AllLive.UWP.ViewModels
         private void StartTimer()
         {
             timer?.Stop();
+            timer?.Dispose();
             Countdown = 600;
             timer = new Timer(1000);
             timer.Elapsed += (s, e) =>
