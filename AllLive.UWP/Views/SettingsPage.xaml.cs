@@ -44,7 +44,15 @@ namespace AllLive.UWP.Views
             }
             BiliAccount.Instance.OnAccountChanged += BiliAccount_OnAccountChanged; 
             LoadUI();
+            
+            // 页面卸载时取消事件订阅
+            this.Unloaded += SettingsPage_Unloaded;
+        }
 
+        private void SettingsPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            BiliAccount.Instance.OnAccountChanged -= BiliAccount_OnAccountChanged;
+            this.Unloaded -= SettingsPage_Unloaded;
         }
 
         private void BiliAccount_OnAccountChanged(object sender, EventArgs e)

@@ -578,6 +578,7 @@ namespace AllLive.UWP.Views
             {
                 mediaPlayer.Pause();
                 mediaPlayer.Source = null;
+                // 注意：MediaPlayer 不需要 Dispose，但需要取消事件订阅（已在 OnNavigatingFrom 中处理）
             }
             if (interopMSS != null)
             {
@@ -585,8 +586,15 @@ namespace AllLive.UWP.Views
                 interopMSS = null;
             }
 
-            timer_focus.Stop();
-            controlTimer.Stop();
+            if (timer_focus != null)
+            {
+                timer_focus.Stop();
+            }
+            if (controlTimer != null)
+            {
+                controlTimer.Stop();
+            }
+            
             Window.Current.CoreWindow.PointerCursor = new Windows.UI.Core.CoreCursor(Windows.UI.Core.CoreCursorType.Arrow, 0);
 
             liveRoomVM?.Stop();
@@ -645,11 +653,43 @@ namespace AllLive.UWP.Views
         //}
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-
+            // 取消 ViewModel 事件订阅
+            liveRoomVM.ChangedPlayUrl -= LiveRoomVM_ChangedPlayUrl;
             liveRoomVM.AddDanmaku -= LiveRoomVM_AddDanmaku;
-            StopPlay();
-
+            
+            // 取消 MediaPlayer 事件订阅
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
+                mediaPlayer.PlaybackSession.BufferingStarted -= PlaybackSession_BufferingStarted;
+                mediaPlayer.PlaybackSession.BufferingProgressChanged -= PlaybackSession_BufferingProgressChanged;
+                mediaPlayer.PlaybackSession.BufferingEnded -= PlaybackSession_BufferingEnded;
+                mediaPlayer.MediaOpened -= MediaPlayer_MediaOpened;
+                mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
+                mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
+            }
+            
+            // 取消 Timer 事件订阅
+            if (timer_focus != null)
+            {
+                timer_focus.Tick -= Timer_focus_Tick;
+            }
+            if (controlTimer != null)
+            {
+                controlTimer.Tick -= ControlTimer_Tick;
+            }
+            
+            // 取消窗口事件订阅
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
+            
+            // 如果是新窗口模式，取消 Consolidated 事件
+            if (SettingHelper.GetValue(SettingHelper.NEW_WINDOW_LIVEROOM, false))
+            {
+                ApplicationView.GetForCurrentView().Consolidated -= LiveRoomPage_Consolidated;
+            }
+            
+            // 停止播放并清理资源
+            StopPlay();
 
             base.OnNavigatingFrom(e);
         }

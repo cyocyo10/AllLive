@@ -30,8 +30,17 @@ namespace AllLive.UWP.Views
         {
             favoriteVM = new FavoriteVM();
             this.NavigationCacheMode = NavigationCacheMode.Enabled;
-            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent; ;
+            MessageCenter.UpdateFavoriteEvent += MessageCenter_UpdateFavoriteEvent;
             this.InitializeComponent();
+            
+            // 页面卸载时取消事件订阅
+            this.Unloaded += FavoritePage_Unloaded;
+        }
+
+        private void FavoritePage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            MessageCenter.UpdateFavoriteEvent -= MessageCenter_UpdateFavoriteEvent;
+            this.Unloaded -= FavoritePage_Unloaded;
         }
 
         private void MessageCenter_UpdateFavoriteEvent(object sender, EventArgs e)
