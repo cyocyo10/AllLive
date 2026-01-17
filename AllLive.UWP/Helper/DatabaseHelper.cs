@@ -52,7 +52,8 @@ watch_time DATETIME);
             SqliteCommand createTable = new SqliteCommand(tableCommand, db);
             createTable.ExecuteReader();
 
-            // 检测并清理乱码数据
+            // 先尝试修复乱码数据，修复不了的再删除
+            FixCorruptedData();
             await DetectAndCleanCorruptedData();
         }
 
@@ -110,6 +111,85 @@ watch_time DATETIME);
             catch (Exception ex)
             {
                 LogHelper.Log("清理乱码数据时出错", LogType.ERROR, ex);
+            }
+        }
+
+        /// <summary>
+        /// 尝试修复乱码数据（将乱码映射到正确的站点名称）
+        /// </summary>
+        public static void FixCorruptedData()
+        {
+            try
+            {
+                LogHelper.Log("开始修复乱码数据...", LogType.INFO);
+                
+                // 修复收藏表
+                // 虎牙直播的乱码特征：»¢ÑÀÖ±²¥
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE Favorite SET site_name = '虎牙直播' WHERE site_name LIKE '%»¢%' OR site_name LIKE '%ÑÀ%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条虎牙直播数据", LogType.INFO);
+                }
+                
+                // 斗鱼直播的乱码特征：¶·ÓãÖ±²¥
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE Favorite SET site_name = '斗鱼直播' WHERE site_name LIKE '%¶·%' OR site_name LIKE '%Óã%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条斗鱼直播数据", LogType.INFO);
+                }
+                
+                // 哔哩哔哩直播的乱码特征：±¹À¹±¹Ö±²¥
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE Favorite SET site_name = '哔哩哔哩直播' WHERE site_name LIKE '%±%' OR site_name LIKE '%¹%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条哔哩哔哩直播数据", LogType.INFO);
+                }
+                
+                // 抖音直播的乱码特征：¶¶ÒôÖ±²¥
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE Favorite SET site_name = '抖音直播' WHERE site_name LIKE '%¶¶%' OR site_name LIKE '%Òô%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条抖音直播数据", LogType.INFO);
+                }
+                
+                // 修复历史表
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE History SET site_name = '虎牙直播' WHERE site_name LIKE '%»¢%' OR site_name LIKE '%ÑÀ%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条虎牙直播数据", LogType.INFO);
+                }
+                
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE History SET site_name = '斗鱼直播' WHERE site_name LIKE '%¶·%' OR site_name LIKE '%Óã%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条斗鱼直播数据", LogType.INFO);
+                }
+                
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE History SET site_name = '哔哩哔哩直播' WHERE site_name LIKE '%±%' OR site_name LIKE '%¹%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条哔哩哔哩直播数据", LogType.INFO);
+                }
+                
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "UPDATE History SET site_name = '抖音直播' WHERE site_name LIKE '%¶¶%' OR site_name LIKE '%Òô%'";
+                    var count = cmd.ExecuteNonQuery();
+                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条抖音直播数据", LogType.INFO);
+                }
+                
+                LogHelper.Log("乱码数据修复完成", LogType.INFO);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log("修复乱码数据时出错", LogType.ERROR, ex);
             }
         }
 
