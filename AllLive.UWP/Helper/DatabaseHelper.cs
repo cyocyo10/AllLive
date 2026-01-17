@@ -18,8 +18,22 @@ namespace AllLive.UWP.Helper
         {
             await ApplicationData.Current.LocalFolder.CreateFileAsync("alllive.db", CreationCollisionOption.OpenIfExists);
             string dbPath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "alllive.db");
-            db = new SqliteConnection($"Filename={dbPath}");
+            // 添加 UTF-8 编码支持
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = SqliteOpenMode.ReadWriteCreate
+            }.ToString();
+            db = new SqliteConnection(connectionString);
             db.Open();
+            
+            // 确保数据库使用 UTF-8 编码
+            using (var cmd = db.CreateCommand())
+            {
+                cmd.CommandText = "PRAGMA encoding = 'UTF-8';";
+                cmd.ExecuteNonQuery();
+            }
+            
             string tableCommand = @"CREATE TABLE IF NOT EXISTS Favorite (
 id INTEGER PRIMARY KEY AUTOINCREMENT, 
 user_name TEXT,
