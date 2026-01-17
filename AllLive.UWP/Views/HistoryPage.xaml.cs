@@ -40,7 +40,19 @@ namespace AllLive.UWP.Views
         private void ls_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as HistoryItem;
+            if (item == null)
+            {
+                return;
+            }
+
             var site = MainVM.Sites.FirstOrDefault(x => x.Name == item.SiteName);
+            if (site == null)
+            {
+                // 站点不存在，可能是历史数据中的站点已被移除
+                Utils.ShowMessageToast($"无法找到站点: {item.SiteName}", 3000);
+                return;
+            }
+
             MessageCenter.OpenLiveRoom(site.LiveSite, new Core.Models.LiveRoomItem()
             {
                 RoomID = item.RoomID
