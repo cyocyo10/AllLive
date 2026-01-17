@@ -52,7 +52,65 @@ watch_time DATETIME);
             SqliteCommand createTable = new SqliteCommand(tableCommand, db);
             createTable.ExecuteReader();
 
+            // 检测并清理乱码数据
+            await DetectAndCleanCorruptedData();
+        }
 
+        /// <summary>
+        /// 检测并清理乱码数据
+        /// </summary>
+        private async static Task DetectAndCleanCorruptedData()
+        {
+            try
+            {
+                bool hasCorruptedData = false;
+                
+                // 检查收藏表
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM Favorite WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
+                    var count = Convert.ToInt32(cmd.ExecuteScalar());
+                    if (count > 0)
+                    {
+                        hasCorruptedData = true;
+                    }
+                }
+                
+                // 检查历史表
+                using (var cmd = db.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM History WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
+                    var count = Convert.ToInt32(cmd.ExecuteScalar());
+                    if (count > 0)
+                    {
+                        hasCorruptedData = true;
+                    }
+                }
+                
+                if (hasCorruptedData)
+                {
+                    LogHelper.Log("检测到数据库中存在乱码数据，正在清理...", LogType.INFO);
+                    
+                    // 清理乱码数据
+                    using (var cmd = db.CreateCommand())
+                    {
+                        cmd.CommandText = "DELETE FROM Favorite WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
+                        cmd.ExecuteNonQuery();
+                    }
+                    
+                    using (var cmd = db.CreateCommand())
+                    {
+                        cmd.CommandText = "DELETE FROM History WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
+                        cmd.ExecuteNonQuery();
+                    }
+                    
+                    LogHelper.Log("乱码数据已清理完成", LogType.INFO);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log("清理乱码数据时出错", LogType.ERROR, ex);
+            }
         }
 
 
