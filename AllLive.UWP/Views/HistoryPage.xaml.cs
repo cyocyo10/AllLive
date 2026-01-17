@@ -54,7 +54,10 @@ namespace AllLive.UWP.Views
                 // 站点不存在，可能是历史数据中的站点已被移除
                 LogHelper.Log($"[HistoryPage] 无法找到站点 - SiteName: '{item.SiteName}'", LogType.ERROR);
                 LogHelper.Log($"[HistoryPage] 可用站点列表: {string.Join(", ", MainVM.Sites.Select(s => $"'{s.Name}'"))}", LogType.DEBUG);
-                Utils.ShowMessageToast($"无法找到站点: {item.SiteName}", 3000);
+                
+                // 显示详细的调试信息
+                var availableSites = string.Join(", ", MainVM.Sites.Select(s => s.Name));
+                Utils.ShowMessageToast($"无法找到站点\n数据库中: '{item.SiteName}'\n可用站点: {availableSites}", 5000);
                 return;
             }
 
