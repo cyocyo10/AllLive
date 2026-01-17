@@ -45,10 +45,15 @@ namespace AllLive.UWP.Views
                 return;
             }
 
+            // 调试信息：记录站点名称
+            LogHelper.Log($"[HistoryPage] 点击历史记录 - SiteName: '{item.SiteName}', RoomID: '{item.RoomID}'", LogType.DEBUG);
+
             var site = MainVM.Sites.FirstOrDefault(x => x.Name == item.SiteName);
             if (site == null)
             {
                 // 站点不存在，可能是历史数据中的站点已被移除
+                LogHelper.Log($"[HistoryPage] 无法找到站点 - SiteName: '{item.SiteName}'", LogType.ERROR);
+                LogHelper.Log($"[HistoryPage] 可用站点列表: {string.Join(", ", MainVM.Sites.Select(s => $"'{s.Name}'"))}", LogType.DEBUG);
                 Utils.ShowMessageToast($"无法找到站点: {item.SiteName}", 3000);
                 return;
             }
