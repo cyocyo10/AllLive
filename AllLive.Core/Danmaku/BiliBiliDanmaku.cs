@@ -1,4 +1,4 @@
-using AllLive.Core.Helper;
+ï»¿using AllLive.Core.Helper;
 using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using Newtonsoft.Json;
@@ -17,8 +17,8 @@ using System.Timers;
 using System.Web;
 using WebSocketSharp;
 /*
-* ßÙÁ¨ßÙÁ¨µ¯Ä»ÊµÏÖ
-* ²Î¿¼ÎÄµµ£ºhttps://github.com/lovelyyoshino/Bilibili-Live-API/blob/master/API.WebSocket.md
+* å“”å“©å“”å“©å¼¹å¹•å®ç°
+* å‚è€ƒæ–‡æ¡£ï¼šhttps://github.com/lovelyyoshino/Bilibili-Live-API/blob/master/API.WebSocket.md
 */
 namespace AllLive.Core.Danmaku
 {
@@ -55,7 +55,7 @@ namespace AllLive.Core.Danmaku
         {
             await Task.Run(() =>
             {
-                //·¢ËÍ½ø·¿ĞÅÏ¢
+                //å‘é€è¿›æˆ¿ä¿¡æ¯
                 ws.Send(EncodeData(JsonConvert.SerializeObject(new
                 {
                     roomid = roomId,
@@ -115,7 +115,7 @@ namespace AllLive.Core.Danmaku
             var info = await GetDanmuInfo(roomId);
             if (info == null)
             {
-                SendSystemMessage("»ñÈ¡µ¯Ä»ĞÅÏ¢Ê§°Ü");
+                SendSystemMessage("è·å–å¼¹å¹•ä¿¡æ¯å¤±è´¥");
                 return;
             }
             danmuInfo = info;
@@ -166,19 +166,19 @@ namespace AllLive.Core.Danmaku
 
         private void ParseData(byte[] data)
         {
-            //Ğ­Òé°æ±¾¡£
-            //0ÎªJSON£¬¿ÉÒÔÖ±½Ó½âÎö£»
-            //1Îª·¿¼äÈËÆøÖµ,BodyÎªInt32£»
-            //2ÎªzlibÑ¹Ëõ¹ıBuffer£¬ĞèÒª½âÑ¹ÔÙ´¦Àí
-            //3ÎªbrotliÑ¹Ëõ¹ıBuffer£¬ĞèÒª½âÑ¹ÔÙ´¦Àí
+            //åè®®ç‰ˆæœ¬ã€‚
+            //0ä¸ºJSONï¼Œå¯ä»¥ç›´æ¥è§£æï¼›
+            //1ä¸ºæˆ¿é—´äººæ°”å€¼,Bodyä¸ºInt32ï¼›
+            //2ä¸ºzlibå‹ç¼©è¿‡Bufferï¼Œéœ€è¦è§£å‹å†å¤„ç†
+            //3ä¸ºbrotliå‹ç¼©è¿‡Bufferï¼Œéœ€è¦è§£å‹å†å¤„ç†
             int protocolVersion = BitConverter.ToInt32(new byte[4] { data[7], data[6], 0, 0 }, 0);
-            //²Ù×÷ÀàĞÍ¡£
-            //3=ĞÄÌø»ØÓ¦£¬ÄÚÈİÎª·¿¼äÈËÆøÖµ£»
-            //5=Í¨Öª£¬µ¯Ä»¡¢¹ã²¥µÈÈ«²¿ĞÅÏ¢£»
-            //8=½ø·¿»ØÓ¦£¬¿Õ
+            //æ“ä½œç±»å‹ã€‚
+            //3=å¿ƒè·³å›åº”ï¼Œå†…å®¹ä¸ºæˆ¿é—´äººæ°”å€¼ï¼›
+            //5=é€šçŸ¥ï¼Œå¼¹å¹•ã€å¹¿æ’­ç­‰å…¨éƒ¨ä¿¡æ¯ï¼›
+            //8=è¿›æˆ¿å›åº”ï¼Œç©º
             int operation = BitConverter.ToInt32(data.Skip(8).Take(4).Reverse().ToArray(), 0);
 
-            //ÄÚÈİ
+            //å†…å®¹
             var body = data.Skip(16).ToArray();
             if (operation == 3)
             {
@@ -197,7 +197,7 @@ namespace AllLive.Core.Danmaku
                     body = DecompressData(body, protocolVersion);
                 }
                 var text = Encoding.UTF8.GetString(body);
-                //¿ÉÄÜÓĞ¶àÌõÊı¾İ£¬×ö¸ö·Ö¸î
+                //å¯èƒ½æœ‰å¤šæ¡æ•°æ®ï¼Œåšä¸ªåˆ†å‰²
                 var textLines = Regex.Split(text, "[\x00-\x1f]+").Where(x => x.Length > 2 && x[0] == '{').ToArray();
                 foreach (var item in textLines)
                 {
@@ -267,36 +267,36 @@ namespace AllLive.Core.Danmaku
         }
 
         /// <summary>
-        /// ¶ÔÊı¾İ½øĞĞ±àÂë
+        /// å¯¹æ•°æ®è¿›è¡Œç¼–ç 
         /// </summary>
-        /// <param name="msg">ÎÄ±¾ÄÚÈİ</param>
-        /// <param name="action">2=ĞÄÌø£¬7=½ø·¿</param>
+        /// <param name="msg">æ–‡æœ¬å†…å®¹</param>
+        /// <param name="action">2=å¿ƒè·³ï¼Œ7=è¿›æˆ¿</param>
         /// <returns></returns>
         private byte[] EncodeData(string msg, int action)
         {
             var data = Encoding.UTF8.GetBytes(msg);
-            //Í·²¿³¤¶È¹Ì¶¨16
+            //å¤´éƒ¨é•¿åº¦å›ºå®š16
             var length = data.Length + 16;
             var buffer = new byte[length];
             using (var ms = new MemoryStream(buffer))
             {
 
-                //Êı¾İ°ü³¤¶È
+                //æ•°æ®åŒ…é•¿åº¦
                 var b = BitConverter.GetBytes(buffer.Length).ToArray().Reverse().ToArray();
                 ms.Write(b, 0, 4);
-                //Êı¾İ°üÍ·²¿³¤¶È,¹Ì¶¨16
+                //æ•°æ®åŒ…å¤´éƒ¨é•¿åº¦,å›ºå®š16
                 b = BitConverter.GetBytes(16).Reverse().ToArray();
                 ms.Write(b, 2, 2);
-                //Ğ­Òé°æ±¾£¬0=JSON,1=Int32,2=Buffer
+                //åè®®ç‰ˆæœ¬ï¼Œ0=JSON,1=Int32,2=Buffer
                 b = BitConverter.GetBytes(0).Reverse().ToArray(); ;
                 ms.Write(b, 0, 2);
-                //²Ù×÷ÀàĞÍ
+                //æ“ä½œç±»å‹
                 b = BitConverter.GetBytes(action).Reverse().ToArray(); ;
                 ms.Write(b, 0, 4);
-                //Êı¾İ°üÍ·²¿³¤¶È,¹Ì¶¨1
+                //æ•°æ®åŒ…å¤´éƒ¨é•¿åº¦,å›ºå®š1
                 b = BitConverter.GetBytes(1).Reverse().ToArray(); ;
                 ms.Write(b, 0, 4);
-                //Êı¾İ
+                //æ•°æ®
                 ms.Write(data, 0, data.Length);
                 var _bytes = ms.ToArray();
                 ms.Flush();
@@ -307,7 +307,7 @@ namespace AllLive.Core.Danmaku
 
 
         /// <summary>
-        /// ½âÂëÊı¾İ
+        /// è§£ç æ•°æ®
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -336,7 +336,7 @@ namespace AllLive.Core.Danmaku
 
         }
         /// <summary>
-        /// ½âÑ¹Êı¾İ (Ê¹ÓÃBrotli)
+        /// è§£å‹æ•°æ® (ä½¿ç”¨Brotli)
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -429,7 +429,7 @@ namespace AllLive.Core.Danmaku
             NewMessage(this, new LiveMessage()
             {
                 Type = LiveMessageType.Chat,
-                UserName = "ÏµÍ³",
+                UserName = "ç³»ç»Ÿ",
                 Message = msg
             });
         }
@@ -448,7 +448,7 @@ namespace AllLive.Core.Danmaku
             {
                 return (_imgKey, _subKey);
             }
-            // »ñÈ¡×îĞÂµÄ img_key ºÍ sub_key
+            // è·å–æœ€æ–°çš„ img_key å’Œ sub_key
             var response = await HttpUtil.GetString(
                 "https://api.bilibili.com/x/web-interface/nav",
                  headers: string.IsNullOrEmpty(Args.Cookie) ? null : new Dictionary<string, string>
@@ -470,7 +470,7 @@ namespace AllLive.Core.Danmaku
 
         private string GetMixinKey(string origin)
         {
-            // ¶Ô imgKey ºÍ subKey ½øĞĞ×Ö·ûË³Ğò´òÂÒ±àÂë
+            // å¯¹ imgKey å’Œ subKey è¿›è¡Œå­—ç¬¦é¡ºåºæ‰“ä¹±ç¼–ç 
             return mixinKeyEncTab.Aggregate("", (s, i) => s + origin[i]).Substring(0, 32);
         }
 
@@ -478,16 +478,16 @@ namespace AllLive.Core.Danmaku
         {
             var (imgKey, subKey) = await GetWbiKeys();
 
-            // ÎªÇëÇó²ÎÊı½øĞĞ wbi Ç©Ãû
+            // ä¸ºè¯·æ±‚å‚æ•°è¿›è¡Œ wbi ç­¾å
             var mixinKey = GetMixinKey(imgKey + subKey);
             var currentTime = (long)Math.Round(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
             var queryString = HttpUtility.ParseQueryString(url);
 
             var queryParams = queryString.Cast<string>().ToDictionary(k => k, v => queryString[v]);
-            queryParams["wts"] = currentTime + ""; // Ìí¼Ó wts ×Ö¶Î
-            queryParams = queryParams.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value); // °´ÕÕ key ÖØÅÅ²ÎÊı
-                                                                                                  // ¹ıÂË value ÖĞµÄ "!'()*" ×Ö·û
+            queryParams["wts"] = currentTime + ""; // æ·»åŠ  wts å­—æ®µ
+            queryParams = queryParams.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value); // æŒ‰ç…§ key é‡æ’å‚æ•°
+                                                                                                  // è¿‡æ»¤ value ä¸­çš„ "!'()*" å­—ç¬¦
             queryParams = queryParams.ToDictionary(x => x.Key, x => string.Join("", x.Value.ToString().Where(c => "!'()*".Contains(c) == false)));
 
             var query = string.Join("&", queryParams.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));

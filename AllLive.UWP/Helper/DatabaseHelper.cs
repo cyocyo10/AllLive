@@ -27,13 +27,6 @@ namespace AllLive.UWP.Helper
             db = new SqliteConnection(connectionString);
             db.Open();
             
-            // 确保数据库使用 UTF-8 编码
-            using (var cmd = db.CreateCommand())
-            {
-                cmd.CommandText = "PRAGMA encoding = 'UTF-8';";
-                cmd.ExecuteNonQuery();
-            }
-            
             string tableCommand = @"CREATE TABLE IF NOT EXISTS Favorite (
 id INTEGER PRIMARY KEY AUTOINCREMENT, 
 user_name TEXT,
@@ -51,148 +44,7 @@ watch_time DATETIME);
 ";
             SqliteCommand createTable = new SqliteCommand(tableCommand, db);
             createTable.ExecuteReader();
-
-            // 先尝试修复乱码数据，修复不了的再删除
-            FixCorruptedData();
-            await DetectAndCleanCorruptedData();
         }
-
-        /// <summary>
-        /// 检测并清理乱码数据
-        /// </summary>
-        private async static Task DetectAndCleanCorruptedData()
-        {
-            try
-            {
-                bool hasCorruptedData = false;
-                
-                // 检查收藏表
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT COUNT(*) FROM Favorite WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
-                    var count = Convert.ToInt32(cmd.ExecuteScalar());
-                    if (count > 0)
-                    {
-                        hasCorruptedData = true;
-                    }
-                }
-                
-                // 检查历史表
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT COUNT(*) FROM History WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
-                    var count = Convert.ToInt32(cmd.ExecuteScalar());
-                    if (count > 0)
-                    {
-                        hasCorruptedData = true;
-                    }
-                }
-                
-                if (hasCorruptedData)
-                {
-                    LogHelper.Log("检测到数据库中存在乱码数据，正在清理...", LogType.INFO);
-                    
-                    // 清理乱码数据
-                    using (var cmd = db.CreateCommand())
-                    {
-                        cmd.CommandText = "DELETE FROM Favorite WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
-                        cmd.ExecuteNonQuery();
-                    }
-                    
-                    using (var cmd = db.CreateCommand())
-                    {
-                        cmd.CommandText = "DELETE FROM History WHERE site_name NOT IN ('哔哩哔哩直播', '斗鱼直播', '虎牙直播', '抖音直播')";
-                        cmd.ExecuteNonQuery();
-                    }
-                    
-                    LogHelper.Log("乱码数据已清理完成", LogType.INFO);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogHelper.Log("清理乱码数据时出错", LogType.ERROR, ex);
-            }
-        }
-
-        /// <summary>
-        /// 尝试修复乱码数据（将乱码映射到正确的站点名称）
-        /// </summary>
-        public static void FixCorruptedData()
-        {
-            try
-            {
-                LogHelper.Log("开始修复乱码数据...", LogType.INFO);
-                
-                // 修复收藏表
-                // 虎牙直播的乱码特征：»¢ÑÀÖ±²¥
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE Favorite SET site_name = '虎牙直播' WHERE site_name LIKE '%»¢%' OR site_name LIKE '%ÑÀ%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条虎牙直播数据", LogType.INFO);
-                }
-                
-                // 斗鱼直播的乱码特征：¶·ÓãÖ±²¥
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE Favorite SET site_name = '斗鱼直播' WHERE site_name LIKE '%¶·%' OR site_name LIKE '%Óã%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条斗鱼直播数据", LogType.INFO);
-                }
-                
-                // 哔哩哔哩直播的乱码特征：±¹À¹±¹Ö±²¥
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE Favorite SET site_name = '哔哩哔哩直播' WHERE site_name LIKE '%±%' OR site_name LIKE '%¹%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条哔哩哔哩直播数据", LogType.INFO);
-                }
-                
-                // 抖音直播的乱码特征：¶¶ÒôÖ±²¥
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE Favorite SET site_name = '抖音直播' WHERE site_name LIKE '%¶¶%' OR site_name LIKE '%Òô%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复收藏表中 {count} 条抖音直播数据", LogType.INFO);
-                }
-                
-                // 修复历史表
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE History SET site_name = '虎牙直播' WHERE site_name LIKE '%»¢%' OR site_name LIKE '%ÑÀ%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条虎牙直播数据", LogType.INFO);
-                }
-                
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE History SET site_name = '斗鱼直播' WHERE site_name LIKE '%¶·%' OR site_name LIKE '%Óã%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条斗鱼直播数据", LogType.INFO);
-                }
-                
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE History SET site_name = '哔哩哔哩直播' WHERE site_name LIKE '%±%' OR site_name LIKE '%¹%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条哔哩哔哩直播数据", LogType.INFO);
-                }
-                
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "UPDATE History SET site_name = '抖音直播' WHERE site_name LIKE '%¶¶%' OR site_name LIKE '%Òô%'";
-                    var count = cmd.ExecuteNonQuery();
-                    if (count > 0) LogHelper.Log($"修复历史表中 {count} 条抖音直播数据", LogType.INFO);
-                }
-                
-                LogHelper.Log("乱码数据修复完成", LogType.INFO);
-            }
-            catch (Exception ex)
-            {
-                LogHelper.Log("修复乱码数据时出错", LogType.ERROR, ex);
-            }
-        }
-
 
         public static void AddFavorite(FavoriteItem item)
         {
@@ -210,7 +62,7 @@ watch_time DATETIME);
             command.Parameters.AddWithValue("@site_name", item.SiteName);
             command.Parameters.AddWithValue("@photo", item.Photo ?? "");
             command.Parameters.AddWithValue("@room_id", item.RoomID);
-            command.ExecuteReader();
+            command.ExecuteNonQuery();
         }
         public static long? CheckFavorite(string roomId, string siteName)
         {
@@ -222,7 +74,7 @@ watch_time DATETIME);
 
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
-            command.CommandText = "SELECT * FROM Favorite WHERE room_id=@room_id and site_name=@site_name";
+            command.CommandText = "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name";
             command.Parameters.AddWithValue("@site_name", siteName);
             command.Parameters.AddWithValue("@room_id", roomId);
             var result = command.ExecuteScalar();
@@ -284,12 +136,14 @@ watch_time DATETIME);
             var hisId = CheckHistory(item.RoomID, item.SiteName);
             if (hisId != null)
             {  
-                //更新时间
-                command.CommandText = "UPDATE History SET watch_time=@time WHERE room_id=@room_id and site_name=@site_name";
+                //更新时间和用户信息
+                command.CommandText = "UPDATE History SET watch_time=@time, user_name=@user_name, photo=@photo WHERE room_id=@room_id and site_name=@site_name";
                 command.Parameters.AddWithValue("@site_name", item.SiteName);
                 command.Parameters.AddWithValue("@room_id", item.RoomID);
                 command.Parameters.AddWithValue("@time", DateTime.Now);
-                command.ExecuteReader();
+                command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
+                command.Parameters.AddWithValue("@photo", item.Photo ?? "");
+                command.ExecuteNonQuery();
               
                 return;
             }
@@ -300,7 +154,7 @@ watch_time DATETIME);
             command.Parameters.AddWithValue("@photo", item.Photo ?? "");
             command.Parameters.AddWithValue("@room_id", item.RoomID);
             command.Parameters.AddWithValue("@time", DateTime.Now);
-            command.ExecuteReader();
+            command.ExecuteNonQuery();
         }
         public static long? CheckHistory(string roomId, string siteName)
         {
@@ -312,7 +166,7 @@ watch_time DATETIME);
 
             SqliteCommand command = new SqliteCommand();
             command.Connection = db;
-            command.CommandText = "SELECT * FROM History WHERE room_id=@room_id and site_name=@site_name";
+            command.CommandText = "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name";
             command.Parameters.AddWithValue("@site_name", siteName);
             command.Parameters.AddWithValue("@room_id", roomId);
             var result = command.ExecuteScalar();
