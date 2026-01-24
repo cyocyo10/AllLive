@@ -27,6 +27,9 @@ namespace AllLive.Core
         private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0";
         private const string REFERER = "https://live.douyin.com";
         private const string AUTHORITY = "live.douyin.com";
+        
+        // 默认Cookie，只需要ttwid即可获取所有画质（参考pure_live项目）
+        private const string DEFAULT_COOKIE = "ttwid=1%7CB1qls3GdnZhUov9o2NxOMxxYS2ff6OSvEWbv0ytbES4%7C1680522049%7C280d802d6d478e3e78d0c807f7c487e7ffec0ae4e5fdd6a0fe74c3c6af149511";
 
         Dictionary<string, string> headers = new Dictionary<string, string>
         {
@@ -73,10 +76,20 @@ namespace AllLive.Core
                 {
                     headers["Cookie"] = cookieBuilder.ToString().TrimEnd(';');
                 }
+                else
+                {
+                    // 如果无法获取Cookie，使用默认Cookie（参考pure_live项目）
+                    headers["Cookie"] = DEFAULT_COOKIE;
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                // 发生异常时使用默认Cookie
+                if (!headers.ContainsKey("Cookie"))
+                {
+                    headers["Cookie"] = DEFAULT_COOKIE;
+                }
             }
             return headers;
         }
@@ -448,19 +461,35 @@ namespace AllLive.Core
         /// <returns></returns>
         private async Task<string> GetWebCookie(string webRid)
         {
-            var resp = await HttpUtil.Head($"https://live.douyin.com/{webRid}",
-                headers: await GetRequestHeaders()
-            );
-            var dyCookie = "";
-            foreach (var item in resp.Headers.GetValues("Set-Cookie"))
+            try
             {
-                var cookie = item.Split(';')[0];
-                if (cookie.Contains("ttwid") || cookie.Contains("__ac_nonce") || cookie.Contains("msToken"))
+                var resp = await HttpUtil.Head($"https://live.douyin.com/{webRid}",
+                    headers: await GetRequestHeaders()
+                );
+                var dyCookie = "";
+                foreach (var item in resp.Headers.GetValues("Set-Cookie"))
                 {
-                    dyCookie += $"{cookie};";
+                    var cookie = item.Split(';')[0];
+                    if (cookie.Contains("ttwid") || cookie.Contains("__ac_nonce") || cookie.Contains("msToken"))
+                    {
+                        dyCookie += $"{cookie};";
+                    }
                 }
+                
+                // 如果没有获取到Cookie，使用默认Cookie
+                if (string.IsNullOrEmpty(dyCookie))
+                {
+                    dyCookie = DEFAULT_COOKIE;
+                }
+                
+                return dyCookie;
             }
-            return dyCookie;
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"GetWebCookie error: {ex.Message}");
+                // 发生异常时返回默认Cookie
+                return DEFAULT_COOKIE;
+            }
         }
 
         /// <summary>
