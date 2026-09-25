@@ -1,4 +1,4 @@
-﻿using AllLive.UWP.Helper;
+using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using System;
 using System.Collections.Generic;
@@ -80,25 +80,38 @@ namespace AllLive.UWP.ViewModels
                 LoaddingLiveStatus = true;
                 LogHelper.Log("[FavoriteVM.LoadLiveStatus] 开始批量加载直播状态", LogType.DEBUG);
                 var tasks = Items.Select(item => LoadLiveStatusAsync(item)).ToArray();
-                await Task.WhenAll(tasks);
+                var results = await Task.WhenAll(tasks);
                 LogHelper.Log("[FavoriteVM.LoadLiveStatus] 批量加载直播状态完成", LogType.DEBUG);
+                // GetLiveStatus 的 continuation 在线程池线程上执行,
+                // LiveStatus/LoaddingLiveStatus 的赋值必须回到 UI 线程,否则会触发非 UI 线程的 PropertyChanged
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.Dispatcher.RunAsync(
+                    Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    foreach (var result in results)
+                    {
+                        if (result.Item1 != null)
+                        {
+                            result.Item1.LiveStatus = result.Item2;
+                        }
+                    }
+                    Items = new ObservableCollection<FavoriteItem>(
+                        Items.OrderByDescending(x => x.LiveStatus == AllLive.Core.Models.LiveStatusType.Live)
+                             .ThenByDescending(x => x.LiveStatus == AllLive.Core.Models.LiveStatusType.Replay));
+                    LoaddingLiveStatus = false;
+                });
             }
             catch (Exception ex)
             {
                 LogHelper.Log("[FavoriteVM.LoadLiveStatus] 批量加载直播状态失败", LogType.ERROR, ex);
-            }
-            finally
-            {
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.Dispatcher.RunAsync(
                     Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    Items = new ObservableCollection<FavoriteItem>(Items.OrderByDescending(x => (int)x.LiveStatus));
                     LoaddingLiveStatus = false;
                 });
             }
         }
 
-        private async Task LoadLiveStatusAsync(FavoriteItem item)
+        private async Task<Tuple<FavoriteItem, AllLive.Core.Models.LiveStatusType>> LoadLiveStatusAsync(FavoriteItem item)
         {
             try
             {
@@ -106,13 +119,14 @@ namespace AllLive.UWP.ViewModels
                 if (site != null)
                 {
                     var status = await site.LiveSite.GetLiveStatus(item.RoomID);
-                    item.LiveStatus = status;
+                    return Tuple.Create(item, status);
                 }
             }
             catch (Exception ex)
             {
                 LogHelper.Log($"[FavoriteVM.LoadLiveStatusAsync] {item.SiteName}-{item.RoomID} 失败", LogType.ERROR, ex);
             }
+            return Tuple.Create(item, AllLive.Core.Models.LiveStatusType.Offline);
         }
 
 
