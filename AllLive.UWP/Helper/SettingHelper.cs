@@ -1,4 +1,4 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
+using Microsoft.Toolkit.Uwp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,6 +91,10 @@ namespace AllLive.UWP.Helper
         /// 抖音Cookie
         /// </summary>
         public const string DOUYIN_COOKIE = "DouyinCookie";
+        /// <summary>
+        /// 斗鱼Cookie
+        /// </summary>
+        public const string DOUYU_COOKIE = "DouyuCookie";
         public class LiveDanmaku
         {
             public const string TOP_MARGIN = "LiveTopMargin";

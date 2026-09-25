@@ -1,4 +1,4 @@
-﻿using AllLive.Core.Interface;
+using AllLive.Core.Interface;
 using AllLive.UWP.Helper;
 using AllLive.UWP.Models;
 using AllLive.UWP.ViewModels;
@@ -88,6 +88,7 @@ namespace AllLive.UWP
             base.OnNavigatedTo(e);
             _ = BiliAccount.Instance.InitLoginInfo();
             DouyinAccount.Instance.InitLoginInfo();
+            DouyuAccount.Instance.InitLoginInfo();
             _ = CheckUpdate();
         }
 

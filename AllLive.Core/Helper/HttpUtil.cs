@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -132,6 +132,29 @@ namespace AllLive.Core.Helper
                     body.Add(new KeyValuePair<string, string>(splits[0], splits.Length > 1 ? splits[1] : ""));
                 }
                 request.Content = new FormUrlEncodedContent(body);
+                using (var result = await SharedClient.SendAsync(request).ConfigureAwait(false))
+                {
+                    result.EnsureSuccessStatusCode();
+                    return await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
+        /// <summary>
+        /// POST 预编码的表单字符串(application/x-www-form-urlencoded)，内容原样发送，不做二次编码。
+        /// </summary>
+        public static async Task<string> PostFormUrlEncodedString(string url, string formData, IDictionary<string, string> headers = null)
+        {
+            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            {
+                if (headers != null)
+                {
+                    foreach (var item in headers)
+                    {
+                        request.Headers.TryAddWithoutValidation(item.Key, item.Value);
+                    }
+                }
+                request.Content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
                 using (var result = await SharedClient.SendAsync(request).ConfigureAwait(false))
                 {
                     result.EnsureSuccessStatusCode();

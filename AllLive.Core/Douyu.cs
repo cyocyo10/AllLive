@@ -1,4 +1,4 @@
-﻿using AllLive.Core.Interface;
+using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -10,13 +10,9 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Linq;
 
-
-#if !WINDOWS_UWP
-using QuickJS;
-#endif
 /*
- * 参考：
- * https://github.com/wbt5/real-url/blob/master/douyu.py
+ * 斗鱼取流签名参考 pure_live 纯 Dart 实现(getEncryption 描述符 + MD5):
+ * https://github.com/liuchuancong/pure_live/blob/master/lib/core/site/douyu/douyu_utils.dart
  */
 namespace AllLive.Core
 {
@@ -125,13 +121,6 @@ namespace AllLive.Core
         public async Task<LiveRoomDetail> GetRoomDetail(object roomId)
         {
             var roomInfo = await GetRoomInfo(roomId.ToString());
-            var jsEncResult = await HttpUtil.GetString($"https://www.douyu.com/swf_api/homeH5Enc?rids={roomId}", new Dictionary<string, string>()
-            {
-                { "referer", $"https://m.douyu.com/{roomId}"},
-                { "user-agent","Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/114.0.0.0" },
-            });
-            var crptext = JObject.Parse(jsEncResult)["data"][$"room{roomId}"].ToString();
-           
 
             return new LiveRoomDetail()
             {
@@ -145,7 +134,7 @@ namespace AllLive.Core
                 Notice = "",
                 Status = roomInfo["show_status"].ToInt32() == 1 && roomInfo["videoLoop"].ToInt32() != 1,
                 DanmakuData = roomInfo["room_id"].ToString(),
-                Data = await GetPlayArgs(crptext, roomInfo["room_id"].ToString()),
+                Data = roomInfo["room_id"].ToString(),
                 Url = "https://www.douyu.com/" + roomId,
                 IsRecord= roomInfo["videoLoop"].ToInt32() == 1,
             };
@@ -161,43 +150,6 @@ namespace AllLive.Core
             });
             var obj = JObject.Parse(result);
             return obj["room"];
-        }
-
-        private async Task<string> GetPlayArgs(string html, string rid)
-        {
-            //取加密的js
-            html = Regex.Match(html, @"(vdwdae325w_64we[\s\S]*function ub98484234[\s\S]*?)function").Groups[1].Value;
-            html = Regex.Replace(html, @"eval.*?;}", "strc;}");
-            var vaa= Environment.CurrentDirectory ;
-            
-#if WINDOWS_UWP
-            return await DouyuSignRuntime.Current.GenerateSignAsync(html, rid);
-#else
-            using (QuickJSRuntime runtime = new QuickJSRuntime())
-            using (QuickJSContext context = runtime.CreateContext())
-            {
-                var did = "10000000000000000000000000001501";
-                var time = Core.Helper.Utils.GetTimestamp();
-
-                context.Eval(html, "", JSEvalFlags.Global);
-                //调用ub98484234函数，返回格式化后的js
-                var jsCode = context.Eval("ub98484234()", "", JSEvalFlags.Global).ToString();
-
-                var v = Regex.Match(jsCode, @"v=(\d+)").Groups[1].Value;
-                //对参数进行MD5，替换掉JS的CryptoJS\.MD5
-                var rb = Core.Helper.Utils.ToMD5(rid + did + time + v);
-
-                var jsCode2 = Regex.Replace(jsCode, @"return rt;}\);?", "return rt;}");
-                //设置方法名为sign
-                jsCode2 = Regex.Replace(jsCode2, @"\(function \(", "function sign(");
-                //将JS中的MD5方法直接替换成加密完成的rb
-                jsCode2 = Regex.Replace(jsCode2, @"CryptoJS\.MD5\(cb\)\.toString\(\)", $@"""{rb}""");
-                context.Eval(jsCode2, "", JSEvalFlags.Global);
-                //返回参数
-                var args = context.Eval($"sign('{rid}','{did}','{time}')", "", JSEvalFlags.Global).ToString();
-                return args;
-            }
-#endif
         }
 
         public async Task<LiveSearchResult> Search(string keyword, int page = 1)
@@ -230,33 +182,15 @@ namespace AllLive.Core
         }
         public async Task<List<LivePlayQuality>> GetPlayQuality(LiveRoomDetail roomDetail)
         {
-            var data = roomDetail.Data.ToString();
-            data += $"&cdn=&rate=0";
             List<LivePlayQuality> qualities = new List<LivePlayQuality>();
-            var result = await HttpUtil.PostString($"https://www.douyu.com/lapi/live/getH5Play/{ roomDetail.RoomID}", data);
-            var obj = JObject.Parse(result);
-            var cdns = new List<string>();
-            var cdnsWithName = obj["data"]?["cdnsWithName"] as JArray;
-            if (cdnsWithName != null)
-            {
-                foreach (var item in cdnsWithName)
-                {
-                    cdns.Add(item["cdn"]?.ToString() ?? "");
-                }
-            }
-            // 如果cdn以scdn开头，将其放到最后
-            for (int i = 0; i < cdns.Count; i++)
-            {
-                if (cdns[i].StartsWith("scdn"))
-                {
-                    cdns.Add(cdns[i]);
-                    cdns.RemoveAt(i);
-                    break;
-                }
-            }
+            var playData = await RequestPlayData(roomDetail.RoomID, rate: -1);
+            var cdns = ParseCdnCodes(playData);
+            // scdn 线路稳定性较差，移到列表末尾
+            var normalCdns = cdns.Where(c => !c.StartsWith("scdn")).ToList();
+            normalCdns.AddRange(cdns.Where(c => c.StartsWith("scdn")));
+            cdns = normalCdns;
 
-
-            var multirates = obj["data"]?["multirates"] as JArray;
+            var multirates = playData["multirates"] as JArray;
             if (multirates != null)
             {
                 foreach (var item in multirates)
@@ -272,35 +206,135 @@ namespace AllLive.Core
         }
         public async Task<List<string>> GetPlayUrls(LiveRoomDetail roomDetail, LivePlayQuality qn)
         {
-            var args = roomDetail.Data.ToString();
             var data = (KeyValuePair<int, List<string>>)qn.Data;
             List<string> urls = new List<string>();
-            var tasks = data.Value.Select(item => GetUrl(roomDetail.RoomID, args, data.Key, item)).ToArray();
+            var tasks = data.Value.Select(item => GetUrl(roomDetail.RoomID, data.Key, item)).ToArray();
             var results = await Task.WhenAll(tasks);
             urls.AddRange(results.Where(u => !string.IsNullOrEmpty(u)));
             System.Diagnostics.Trace.WriteLine($"[Douyu.GetPlayUrls] fetched {urls.Count} URLs in parallel from {data.Value.Count} CDNs");
             return urls;
         }
 
-        private async Task<string> GetUrl(string rid, string args, int rate, string cdn = "")
+        private async Task<string> GetUrl(string rid, int rate, string cdn = "")
         {
             try
             {
-                args += $"&cdn={cdn}&rate={rate}";
-                var result = await HttpUtil.PostString($"https://www.douyu.com/lapi/live/getH5Play/{rid}", args);
-                var obj = JObject.Parse(result);
-                var rtmpUrl = obj["data"]?["rtmp_url"]?.ToString();
-                var rtmpLive = obj["data"]?["rtmp_live"]?.ToString();
-                if (string.IsNullOrEmpty(rtmpUrl) || string.IsNullOrEmpty(rtmpLive))
-                    return "";
-                return rtmpUrl + "/" + System.Net.WebUtility.HtmlDecode(rtmpLive);
+                var playData = await RequestPlayData(rid, rate, cdn);
+                return ParsePlayUrl(playData);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.WriteLine($"[Douyu] GetUrl failed for rid={rid}: {ex.Message}");
                 return "";
             }
+        }
 
+        /// <summary>
+        /// 请求 getH5PlayV1 取流接口。斗鱼 H5 流地址带 wsAuth 短签名(5 分钟)，
+        /// 失败重试时强制刷新加密描述符重新签名。
+        /// </summary>
+        private async Task<JObject> RequestPlayData(string rid, int rate = -1, string cdn = "", bool forceRefresh = false)
+        {
+            Exception lastError = null;
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    var form = await DouyuSignHelper.BuildFormAsync(rid, rate, cdn, forceRefresh: attempt > 0 || forceRefresh);
+                    var result = await HttpUtil.PostFormUrlEncodedString(
+                        $"https://www.douyu.com/lapi/live/getH5PlayV1/{rid}",
+                        form,
+                        DouyuSignHelper.RequestHeaders(rid));
+                    var obj = JObject.Parse(result);
+                    var errorCode = obj["error"]?.ToObject<int>() ?? obj["code"]?.ToObject<int>() ?? -1;
+                    if (errorCode != 0)
+                    {
+                        throw new Exception($"斗鱼取流接口返回错误 {errorCode}: {obj["msg"]}");
+                    }
+                    var data = obj["data"] as JObject;
+                    if (data == null)
+                    {
+                        throw new Exception("斗鱼取流接口响应缺少 data");
+                    }
+                    return data;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                }
+            }
+            throw new Exception("斗鱼取流请求失败", lastError);
+        }
+
+        private static List<string> ParseCdnCodes(JObject data)
+        {
+            var result = new List<string>();
+            var cdnsWithName = data["cdnsWithName"] as JArray;
+            if (cdnsWithName != null)
+            {
+                foreach (var item in cdnsWithName)
+                {
+                    var code = item["cdn"]?.ToString()?.Trim() ?? "";
+                    if (!string.IsNullOrEmpty(code) && !result.Contains(code))
+                    {
+                        result.Add(code);
+                    }
+                }
+            }
+            var current = data["rtmp_cdn"]?.ToString()?.Trim() ?? "";
+            if (!string.IsNullOrEmpty(current) && !result.Contains(current))
+            {
+                result.Insert(0, current);
+            }
+            if (result.Count == 0)
+            {
+                result.Add("");
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 解析播放地址。rtmp_live 可能是完整签名地址或相对路径(需与 rtmp_url/flv_url 拼接)，
+        /// 裸 CDN 目录不是合法播放输入，必须拦截。
+        /// </summary>
+        private static string ParsePlayUrl(JObject data)
+        {
+            var live = System.Net.WebUtility.HtmlDecode(data["rtmp_live"]?.ToString()?.Trim() ?? "");
+            if (IsPlayableUrl(live)) return live;
+
+            foreach (var baseKey in new[] { "rtmp_url", "flv_url" })
+            {
+                var baseUrl = System.Net.WebUtility.HtmlDecode(data[baseKey]?.ToString()?.Trim() ?? "");
+                if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(live)) continue;
+                var combined = baseUrl.TrimEnd('/') + "/" + live.TrimStart('/');
+                if (IsPlayableUrl(combined)) return combined;
+            }
+
+            foreach (var key in new[] { "player_1", "stream_url", "url" })
+            {
+                var value = System.Net.WebUtility.HtmlDecode(data[key]?.ToString()?.Trim() ?? "");
+                if (IsPlayableUrl(value)) return value;
+            }
+
+            var flvUrl = System.Net.WebUtility.HtmlDecode(data["flv_url"]?.ToString()?.Trim() ?? "");
+            if (IsDirectMediaUrl(flvUrl)) return flvUrl;
+            return "";
+        }
+
+        private static bool IsPlayableUrl(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            Uri uri;
+            if (!Uri.TryCreate(value, UriKind.Absolute, out uri)) return false;
+            return !string.IsNullOrEmpty(uri.Host) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == "rtmp");
+        }
+
+        private static bool IsDirectMediaUrl(string value)
+        {
+            if (!IsPlayableUrl(value)) return false;
+            var path = new Uri(value).AbsolutePath.ToLowerInvariant();
+            return path.EndsWith(".flv") || path.EndsWith(".m3u8") || path.EndsWith(".mp4");
         }
         public async Task<LiveStatusType> GetLiveStatus(object roomId)
         {

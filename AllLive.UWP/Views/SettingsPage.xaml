@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="AllLive.UWP.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -206,6 +206,39 @@
                             x:Name="BtnLogoutDouyin"
                             HorizontalAlignment="Right"
                             Click="BtnLogoutDouyin_Click"
+                            Visibility="Collapsed">
+                            注销登录
+                        </Button>
+                    </Grid>
+                    <Grid
+                        Margin="0,8,0,0"
+                        Padding="8,12"
+                        Background="{ThemeResource LayerFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock>斗鱼</TextBlock>
+                                <TextBlock
+                                    x:Name="txtDouyu"
+                                    FontSize="12"
+                                    Foreground="Gray">
+                                    登录后可观看原画高画质
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Button
+                            x:Name="BtnLoginDouyu"
+                            HorizontalAlignment="Right"
+                            Click="BtnLoginDouyu_Click">
+                            立即登录
+                        </Button>
+                        <Button
+                            x:Name="BtnLogoutDouyu"
+                            HorizontalAlignment="Right"
+                            Click="BtnLogoutDouyu_Click"
                             Visibility="Collapsed">
                             注销登录
                         </Button>

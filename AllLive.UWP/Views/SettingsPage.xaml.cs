@@ -1,4 +1,4 @@
-﻿using AllLive.UWP.Helper;
+using AllLive.UWP.Helper;
 using AllLive.UWP.ViewModels;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.UI.Xaml.Controls;
@@ -198,6 +198,13 @@ namespace AllLive.UWP.Views
                 BtnLoginDouyin.Visibility = Visibility.Collapsed;
                 BtnLogoutDouyin.Visibility = Visibility.Visible;
             }
+
+            if (DouyuAccount.Instance.Logined)
+            {
+                txtDouyu.Text = "已登录";
+                BtnLoginDouyu.Visibility = Visibility.Collapsed;
+                BtnLogoutDouyu.Visibility = Visibility.Visible;
+            }
            
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -289,6 +296,31 @@ namespace AllLive.UWP.Views
             txtDouyin.Text = "登录后可搜索直播间";
             BtnLoginDouyin.Visibility = Visibility.Visible;
             BtnLogoutDouyin.Visibility = Visibility.Collapsed;
+        }
+
+        private async void BtnLoginDouyu_Click(object sender, RoutedEventArgs e)
+        {
+            if (DouyuAccount.Instance.Logined)
+            {
+                Utils.ShowMessageToast("已登录");
+                return;
+            }
+            var dialog = new AllLive.UWP.Controls.DouyuLoginDialog();
+            await dialog.ShowAsync();
+            if (dialog.LoginSuccess)
+            {
+                txtDouyu.Text = "已登录";
+                BtnLoginDouyu.Visibility = Visibility.Collapsed;
+                BtnLogoutDouyu.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void BtnLogoutDouyu_Click(object sender, RoutedEventArgs e)
+        {
+            DouyuAccount.Instance.Logout();
+            txtDouyu.Text = "登录后可观看原画高画质";
+            BtnLoginDouyu.Visibility = Visibility.Visible;
+            BtnLogoutDouyu.Visibility = Visibility.Collapsed;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -146,6 +146,9 @@
     <Compile Include="Controls\DouyinLoginDialog.xaml.cs">
       <DependentUpon>DouyinLoginDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\DouyuLoginDialog.xaml.cs">
+      <DependentUpon>DouyuLoginDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\MessageToast.xaml.cs">
       <DependentUpon>MessageToast.xaml</DependentUpon>
     </Compile>
@@ -159,6 +162,7 @@
     <Compile Include="Converters\NumberToStringConvert.cs" />
     <Compile Include="Helper\BiliAccount.cs" />
     <Compile Include="Helper\DouyinAccount.cs" />
+    <Compile Include="Helper\DouyuAccount.cs" />
     <Compile Include="Helper\ExceptionHandler.cs" />
     <Compile Include="Helper\DatabaseHelper.cs" />
     <Compile Include="Helper\LogHelper.cs" />
@@ -305,6 +309,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\DouyinLoginDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\DouyuLoginDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
