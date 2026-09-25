@@ -72,7 +72,8 @@ namespace AllLive.UWP.Controls
                 await webView.EnsureCoreWebView2Async();
                 webView.CoreWebView2.Settings.UserAgent = CHROME_UA;
                 webView.NavigationCompleted += WebView_NavigationCompleted;
-                webView.CoreWebView2.Navigate("https://www.douyu.com");
+                // 直接打开独立登录页,只显示登录框(扫码/账号登录),不带门户内容
+                webView.CoreWebView2.Navigate("https://passport.douyu.com/");
                 _webViewInitialized = true;
             }
             catch (Exception ex)
@@ -86,7 +87,7 @@ namespace AllLive.UWP.Controls
         {
             if (args.IsSuccess)
             {
-                txtStatus.Text = "请在页面中点击「登录」并完成登录，成功后点击「完成登录」";
+                txtStatus.Text = "请使用斗鱼App扫码登录，或切换账号密码登录，成功后点击「完成登录」";
             }
             else
             {
