@@ -3,24 +3,69 @@ using Microsoft.Web.WebView2.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 
 namespace AllLive.UWP.Controls
 {
-    public sealed partial class DouyuLoginDialog : ContentDialog
+    /// <summary>
+    /// 可拖动的斗鱼登录框。基于 Popup 而非 ContentDialog,
+    /// 按住标题栏可拖动位置,避免遮挡扫码或页面内容。
+    /// </summary>
+    public sealed partial class DouyuLoginDialog : UserControl
     {
         private const string CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-        public bool LoginSuccess { get; private set; } = false;
+        private const double DialogWidth = 520;
+        private const double DialogHeight = 640;
+
+        private TaskCompletionSource<bool> _tcs;
+        private bool _webViewInitialized = false;
+        private bool _dragging = false;
+        private double _dragOffsetX = 0;
+        private double _dragOffsetY = 0;
 
         public DouyuLoginDialog()
         {
             this.InitializeComponent();
             this.Loaded += DouyuLoginDialog_Loaded;
+            loginPopup.Closed += (sender, args) =>
+            {
+                // 兜底:弹层关闭时确保等待方被唤醒
+                _tcs?.TrySetResult(false);
+            };
+        }
+
+        /// <summary>打开登录框,返回登录是否成功(取消或关闭返回 false)。</summary>
+        public Task<bool> ShowAsync()
+        {
+            _tcs = new TaskCompletionSource<bool>();
+            CenterPopup();
+            loginPopup.IsOpen = true;
+            return _tcs.Task;
+        }
+
+        private void CenterPopup()
+        {
+            var bounds = Window.Current.Bounds;
+            loginPopup.HorizontalOffset = Math.Max(0, (bounds.Width - DialogWidth) / 2);
+            loginPopup.VerticalOffset = Math.Max(0, (bounds.Height - DialogHeight) / 2);
+        }
+
+        private void Close(bool success)
+        {
+            loginPopup.IsOpen = false;
+            _tcs?.TrySetResult(success);
         }
 
         private async void DouyuLoginDialog_Loaded(object sender, RoutedEventArgs e)
         {
+            // Popup 打开后内容才进入可视化树,Loaded 触发时初始化 WebView2
+            if (_webViewInitialized)
+            {
+                return;
+            }
             try
             {
                 txtStatus.Text = "正在初始化 WebView2...";
@@ -28,12 +73,12 @@ namespace AllLive.UWP.Controls
                 webView.CoreWebView2.Settings.UserAgent = CHROME_UA;
                 webView.NavigationCompleted += WebView_NavigationCompleted;
                 webView.CoreWebView2.Navigate("https://www.douyu.com");
+                _webViewInitialized = true;
             }
             catch (Exception ex)
             {
                 LogHelper.Log("WebView2初始化失败", LogType.ERROR, ex);
                 txtStatus.Text = "WebView2 初始化失败，请确保已安装 Edge WebView2 Runtime\n" + ex.Message;
-                txtStatus.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Red);
             }
         }
 
@@ -49,9 +94,48 @@ namespace AllLive.UWP.Controls
             }
         }
 
-        private async void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        private void TitleBar_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            args.Cancel = true;
+            _dragging = true;
+            var point = e.GetCurrentPoint(null).Position;
+            _dragOffsetX = point.X - loginPopup.HorizontalOffset;
+            _dragOffsetY = point.Y - loginPopup.VerticalOffset;
+            TitleBar.CapturePointer(e.Pointer);
+        }
+
+        private void TitleBar_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            if (!_dragging)
+            {
+                return;
+            }
+            var point = e.GetCurrentPoint(null).Position;
+            var bounds = Window.Current.Bounds;
+            // 限制在窗口范围内,防止拖丢
+            var x = Math.Max(-(DialogWidth - 60), Math.Min(point.X - _dragOffsetX, bounds.Width - 60));
+            var y = Math.Max(0, Math.Min(point.Y - _dragOffsetY, bounds.Height - 48));
+            loginPopup.HorizontalOffset = x;
+            loginPopup.VerticalOffset = y;
+        }
+
+        private void TitleBar_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            _dragging = false;
+            TitleBar.ReleasePointerCapture(e.Pointer);
+        }
+
+        private void BtnDone_Click(object sender, RoutedEventArgs e)
+        {
+            TryFinishLogin();
+        }
+
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            Close(false);
+        }
+
+        private async void TryFinishLogin()
+        {
             try
             {
                 if (webView.CoreWebView2 == null)
@@ -88,19 +172,14 @@ namespace AllLive.UWP.Controls
                 var cookieStr = string.Join(";", cookieParts);
 
                 DouyuAccount.Instance.SetCookie(cookieStr);
-                LoginSuccess = true;
                 Utils.ShowMessageToast("斗鱼登录成功");
-                this.Hide();
+                Close(true);
             }
             catch (Exception ex)
             {
                 LogHelper.Log("获取斗鱼Cookie失败", LogType.ERROR, ex);
                 txtStatus.Text = "获取Cookie失败: " + ex.Message;
             }
-        }
-
-        private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-        {
         }
     }
 }

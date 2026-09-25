@@ -306,8 +306,8 @@ namespace AllLive.UWP.Views
                 return;
             }
             var dialog = new AllLive.UWP.Controls.DouyuLoginDialog();
-            await dialog.ShowAsync();
-            if (dialog.LoginSuccess)
+            var loginOk = await dialog.ShowAsync();
+            if (loginOk)
             {
                 txtDouyu.Text = "已登录";
                 BtnLoginDouyu.Visibility = Visibility.Collapsed;
