@@ -97,18 +97,8 @@ namespace AllLive.Core.Danmaku
         {
             try
             {
-                // https://github.com/sta/websocket-sharp/issues/219
-                var sslProtocolHack = (System.Security.Authentication.SslProtocols)(SslProtocolsHack.Tls12 | SslProtocolsHack.Tls11 | SslProtocolsHack.Tls);
-                //TlsHandshakeFailure
-                if (e.Code == 1015 && ws.SslConfiguration.EnabledSslProtocols != sslProtocolHack)
-                {
-                    ws.SslConfiguration.EnabledSslProtocols = sslProtocolHack;
-                    ws.Connect();
-                }
-                else
-                {
-                    OnClose?.Invoke(this, e.Reason);
-                }
+                // A failed TLS handshake must not downgrade protocol or certificate checks.
+                OnClose?.Invoke(this, e.Reason);
             }
             catch (Exception ex)
             {
@@ -152,6 +142,7 @@ namespace AllLive.Core.Danmaku
             }
             var host = info.host_list.Last();
             ws = new WebSocket($"wss://{host.host}/sub");
+            WebSocketSecurity.Configure(ws);
 
             if (!string.IsNullOrEmpty(Args.Cookie))
             {

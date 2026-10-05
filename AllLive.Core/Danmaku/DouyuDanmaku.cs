@@ -37,6 +37,7 @@ namespace AllLive.Core.Danmaku
         public DouyuDanmaku()
         {
             ws = new WebSocket(ServerUrl);
+            WebSocketSecurity.Configure(ws);
             ws.OnOpen += Ws_OnOpen;
             ws.OnError += Ws_OnError;
             ws.OnMessage += Ws_OnMessage;

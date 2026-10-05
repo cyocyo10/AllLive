@@ -1,4 +1,4 @@
-using AllLive.Core.Interface;
+﻿using AllLive.Core.Interface;
 using AllLive.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -306,6 +306,9 @@ namespace AllLive.Core
             {
                 var baseUrl = System.Net.WebUtility.HtmlDecode(data[baseKey]?.ToString()?.Trim() ?? "");
                 if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(live)) continue;
+                // An absolute but invalid stream URL must never be joined as a relative path.
+                if (Uri.TryCreate(live, UriKind.Absolute, out var absoluteLive) &&
+                    !string.IsNullOrEmpty(absoluteLive.Host)) continue;
                 var combined = baseUrl.TrimEnd('/') + "/" + live.TrimStart('/');
                 if (IsPlayableUrl(combined)) return combined;
             }
@@ -326,7 +329,9 @@ namespace AllLive.Core
             if (string.IsNullOrEmpty(value)) return false;
             Uri uri;
             if (!Uri.TryCreate(value, UriKind.Absolute, out uri)) return false;
-            return !string.IsNullOrEmpty(uri.Host) &&
+            var path = Uri.UnescapeDataString(uri.AbsolutePath);
+            return !string.IsNullOrEmpty(uri.Host) && !string.IsNullOrEmpty(path) &&
+                !path.EndsWith("/", StringComparison.Ordinal) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == "rtmp");
         }
 

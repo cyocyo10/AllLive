@@ -52,6 +52,7 @@ namespace AllLive.Core.Danmaku
         {
             heartBeatData = Convert.FromBase64String("ABQdAAwsNgBM");
             ws = new WebSocket(ServerUrl);
+            WebSocketSecurity.Configure(ws);
             ws.OnOpen += Ws_OnOpen;
             ws.OnError += Ws_OnError;
             ws.OnMessage += Ws_OnMessage;
