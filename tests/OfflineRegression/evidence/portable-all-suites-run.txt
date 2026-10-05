@@ -1,0 +1,165 @@
+  Determining projects to restore...
+  Restored /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/AuditHarness.csproj (in 238 ms).
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/TestDoubles.cs(115,35): warning CS0067: The event 'RelayCommand.CanExecuteChanged' is never used [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/AuditHarness.csproj]
+  AuditHarness -> /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/bin/Release/net8.0/AuditHarness.dll
+
+Build succeeded.
+
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/TestDoubles.cs(115,35): warning CS0067: The event 'RelayCommand.CanExecuteChanged' is never used [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/main/AuditHarness.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.19
+AllLive offline source harness | commit=c6951df959b7ead0d93edc087188788b49f1e273
+Patched production targets are linked; HTTP/WebSocket/database/UI are isolation stubs. No platform playback is claimed.
+Runtime=.NET 8.0.31 OS=Debian GNU/Linux 13 (trixie)
+PASS TLS-001 application WebSocket configuration must reject certificate errors (original security assertion) | callback=<Configure>b__0_0, IL=042C060E0416FE012A162A, dependencyAssembly=websocket-sharp, Version=1.0.3.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, validatorAssembly=AuditHarness, synthetic certificate=CN=wrong.invalid, certificate errors=RemoteCertificateNameMismatch, RemoteCertificateChainErrors, accepted=False
+PASS TLS-002 valid platform certificate result is accepted, TLS 1.2 retained
+PASS TLS-003 name, chain, self-signed and missing certificates fail closed individually
+PASS TLS-004 genuine offline private-CA leaf chain validates without changing system trust
+PASS SIGN-001 30-second expiry safety rejects boundary and accepts boundary+1
+PASS SIGN-002 descriptor required fields and encryption-round bounds
+PASS SIGN-003 cookie normalization replaces old device IDs without altering account value | dy_did=a6cb79153fc311c8e1e516bf0f14673f; acf_did=a6cb79153fc311c8e1e516bf0f14673f; token=<fixture>; empty=
+PASS SIGN-004 real MD5/form utilities sign ordinary descriptor and encode once
+PASS SIGN-005 special descriptor omits room/time salt
+PASS SIGN-006 warm cache reuses descriptor
+PASS SIGN-007 cache age 299 seconds reused, 300 seconds refreshed
+PASS SIGN-008 eight concurrent cold-cache callers share one descriptor fetch
+PASS SIGN-009 invalid fetched descriptor throws and releases semaphore for next attempt
+PASS SIGN-010 forced refresh fetches despite valid warm cache
+PASS URL-001 relative stream joined with base and HTML entity decoded
+PASS URL-002 base directory alone rejected
+PASS URL-003 direct flv_url media accepted, directory rejected
+PASS URL-004 rtmp_live bare CDN directory must not be playable (regression) | actual=
+PASS URL-008 host-only, escaped slash, query-only directory rejected; signed stream path accepted
+PASS URL-005 unsupported file URL is rejected
+PASS URL-006 empty CDN list provides default-route placeholder
+PASS URL-007 CDN codes trimmed and deduplicated, current code inserted
+PASS API-001 nonzero API errors limited to two attempts, second refreshes descriptor
+PASS API-002 malformed JSON limited to two attempts
+PASS API-003 successful response without data rejected after two attempts
+PASS API-004 missing multirates returns empty quality list
+PASS API-005 one failed CDN does not discard successful CDN URLs
+PASS API-006 all failed CDNs return empty list with two requests per CDN | GET descriptors=4, POST attempts=6
+PASS API-007 empty recommendations and search are safe
+PASS VM-001 same VM should load successfully after Stop (regression) | LastError=none, danmaku.Starts=2, qualityCalls=2
+PASS VM-002 older quality response must not replace latest quality URL (regression) | CurrentQuality=B, CurrentLine=https://fixture.invalid/B.flv
+PASS VM-003 completed URL request must not emit playback after Stop (regression) | ChangedPlayUrl events after Stop=0
+PASS VM-004 empty URL response preserves existing line and shows an error
+PASS VM-005 stopped room-detail response cannot start danmaku or update room
+PASS VM-006 new room result wins over older pending room result
+PASS VM-007 reload waits for old danmaku Stop and survives late stop completion
+PASS VM-008 old failed URL request cannot emit a stale error toast
+PASS VM-009 queued old message batch is discarded after Stop and reload
+PASS VM-010 queued old online event cannot modify a restarted room
+SUMMARY total=39 passed=39 failed=0; full UWP build/runtime: NOT RUN
+  Determining projects to restore...
+  Restored /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/douyin/DouyinHarness.csproj (in 226 ms).
+  DouyinHarness -> /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/douyin/bin/Release/net8.0/DouyinHarness.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.00
+Offline .NET source-linked lifecycle regression tests; no Windows/UWP or live network test.
+Repaired shared production source based on c6951df959b7ead0d93edc087188788b49f1e273
+Production Task.Delay(5 seconds) is not replaced or shortened.
+{"Name":"pending-signature-completes-after-stop","Status":"PASS","DurationMs":16,"ExpectedSafeBehavior":"A completed Stop prevents an earlier Start from creating or opening a socket.","Observed":{"ConnectCallsAfterLateSignature":0,"SendCalls":0,"SocketCleared":true,"TimerCleared":true},"Error":null}
+{"Name":"normal-start-then-stop-control","Status":"PASS","DurationMs":95,"ExpectedSafeBehavior":"Stop closes an established socket and clears socket/timer state; TLS is configured.","Observed":{"ConnectCalls":1,"CloseCalls":1,"SocketCleared":true,"TimerCleared":true,"TLSCallbackVerified":true},"Error":null}
+{"Name":"retry-connect-exceptions-exhaust-five-attempts","Status":"PASS","DurationMs":25220,"ExpectedSafeBehavior":"Five retries run at five-second intervals, alternate endpoints, and terminate once.","Observed":{"FailureFixture":"Connect throws","ConnectCalls":6,"ReconnectAttempts":5,"ConnectTimesMs":[0,5002,10004,15006,20005,25005],"EndpointHosts":["webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com","webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com","webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com"],"OnCloseMessages":["Connection lost, reconnecting (1/5)","Connection lost, reconnecting (2/5)","Connection lost, reconnecting (3/5)","Connection lost, reconnecting (4/5)","Connection lost, reconnecting (5/5)","offline connection failure"],"TokenCleared":true,"Terminated":true},"Error":null}
+{"Name":"retry-error-events-exhaust-five-attempts","Status":"PASS","DurationMs":25206,"ExpectedSafeBehavior":"Error-event failures receive five retries and a terminal notification.","Observed":{"FailureFixture":"OnError \u002B OnClose","ConnectCalls":6,"ReconnectAttempts":5,"ConnectTimesMs":[0,5002,10000,15002,20000,25001],"EndpointHosts":["webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com","webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com","webcast3-ws-web-lq.douyin.com","webcast5-ws-web-lf.douyin.com"],"OnCloseMessages":["Connection lost, reconnecting (1/5)","Connection lost, reconnecting (2/5)","Connection lost, reconnecting (3/5)","Connection lost, reconnecting (4/5)","Connection lost, reconnecting (5/5)","offline error event"],"TokenCleared":true,"Terminated":true},"Error":null}
+{"Name":"stop-cancels-pending-retry-control","Status":"PASS","DurationMs":5302,"ExpectedSafeBehavior":"Stop before the five-second retry prevents all retry connections.","Observed":{"ConnectCallsAfter5300Ms":1,"TokenCleared":true,"SocketCleared":true},"Error":null}
+{"Name":"old-signature-after-stop-and-start","Status":"PASS","DurationMs":15,"ExpectedSafeBehavior":"Late signing from an earlier session cannot replace new session URL, cookie, or socket.","Observed":{"StoppedBeforeRestart":true,"ConnectCalls":1,"NewSocketRetained":true,"NewRoomCookieAndSignatureRetained":true},"Error":null}
+{"Name":"old-signature-after-newer-start","Status":"PASS","DurationMs":10,"ExpectedSafeBehavior":"Overlapping Start calls leave only the latest session connected.","Observed":{"StoppedBeforeRestart":false,"ConnectCalls":1,"NewSocketRetained":true,"NewRoomCookieAndSignatureRetained":true},"Error":null}
+{"Name":"queued-old-socket-and-timer-events","Status":"PASS","DurationMs":226,"ExpectedSafeBehavior":"Callbacks queued before cleanup cannot reset, cancel, publish, send, or restart the current session.","Observed":{"OldSocketEventsDelivered":4,"OldTimerEventDelivered":true,"CurrentRetryRetained":true,"ExtraSendCalls":0,"PublishedMessages":0,"OldPayloadDecodeCalls":0},"Error":null}
+{"Name":"old-pending-ack-after-stop-and-start","Status":"PASS","DurationMs":31,"ExpectedSafeBehavior":"An old message suspended at ACK cannot send to, publish into, or clean up the new session.","Observed":{"OldSocketSendCalls":1,"CurrentSocketSendCalls":2,"OldPublishedMessages":0,"CurrentPublishedMessages":1,"NewSocketStillOpen":true},"Error":null}
+{"Name":"canceled-old-retry-after-new-start","Status":"PASS","DurationMs":5311,"ExpectedSafeBehavior":"The old reconnect task cannot replace a new session after its original deadline.","Observed":{"ConnectCallsAfter5300Ms":2,"NewSocketRetained":true,"NewRetryBudget":0},"Error":null}
+{"Name":"retry-until-recovery-and-retry-again","Status":"PASS","DurationMs":20323,"ExpectedSafeBehavior":"Retries reach a healthy socket, reset the budget, and can recover from a later disconnect.","Observed":{"ConnectCalls":4,"FirstRecoveryAfterRetries":2,"LaterRecoveryAfterRetries":1,"OnCloseMessages":["Connection lost, reconnecting (1/5)","Connection lost, reconnecting (2/5)","Connection lost, reconnecting (1/5)"],"FinalRetryCount":0,"FinalState":"Open"},"Error":null}
+PASS=11 FAIL=0
+  Determining projects to restore...
+  Restored /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/SyncHarness.csproj (in 256 ms).
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/TestDoubles.cs(51,43): warning CS0067: The event 'HubConnection.Closed' is never used [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/SyncHarness.csproj]
+  SyncHarness -> /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/bin/Release/net8.0/SyncHarness.dll
+
+Build succeeded.
+
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/TestDoubles.cs(51,43): warning CS0067: The event 'HubConnection.Closed' is never used [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/sync/SyncHarness.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.36
+PASS favorite-overlay-malformed
+PASS favorite-merge-malformed-control
+PASS favorite-overlay-null
+PASS favorite-overlay-null-second-item
+PASS favorite-overlay-valid-control
+PASS history-overlay-malformed
+PASS history-merge-malformed-control
+PASS history-overlay-invalid-date
+PASS history-overlay-late-invalid-date
+PASS history-sync-valid-loses-original-time
+PASS add-history-insert-ignores-WatchTime
+PASS add-history-update-ignores-WatchTime
+PASS history-overlay-null
+PASS history-overlay-null-second-item
+PASS history-overlay-missing-room
+PASS history-overlay-missing-site
+PASS favorite-overlay-missing-room
+PASS favorite-overlay-missing-site
+PASS favorite-overlay-mid-insert-rollback
+PASS history-overlay-mid-insert-rollback
+PASS history-merge-null
+PASS history-merge-null-second-item
+PASS history-merge-missing-room
+PASS history-merge-missing-site
+PASS favorite-merge-missing-room
+PASS favorite-merge-missing-site
+PASS favorite-merge-mid-insert-rollback
+PASS history-merge-mid-insert-rollback
+PASS history-merge-update-before-failed-insert-rollback
+PASS favorite-valid-batch-deduplicates
+PASS history-valid-batch-retains-each-time
+PASS favorite-valid-merge-preserves-existing
+PASS history-valid-merge-updates-existing
+PASS ReceiveFavorite-csharp-null
+PASS ReceiveFavorite-empty-string
+PASS ReceiveFavorite-object-instead-of-array
+PASS ReceiveHistory-csharp-null
+PASS ReceiveHistory-empty-string
+PASS ReceiveHistory-object-instead-of-array
+PASS empty-valid-replacement-clears-only-selected-table
+PASS empty-valid-merge-preserves-existing
+PASS add-history-default-time-new-default
+PASS add-history-default-time-old-h
+PASS history-sync-invariant-date-under-other-culture
+PASS history-missing-date-rejects
+PASS database-import-invalid-favorite-validates-whole-batch
+PASS database-import-invalid-history-validates-whole-batch
+47/47 passed using real Microsoft.Data.Sqlite 8.0.6.0.
+  Determining projects to restore...
+  Restored /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj (in 234 ms).
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Danmaku/BiliBiliDanmaku.cs(411,13): warning CS0162: Unreachable code detected [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/tup/UniPacket.cs(176,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/tup/RequestPacket.cs(106,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/util/BasicClassTypeUtil.cs(128,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+  SiteTlsHarness -> /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/bin/Release/net8.0/SiteTlsHarness.dll
+
+Build succeeded.
+
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Danmaku/BiliBiliDanmaku.cs(411,13): warning CS0162: Unreachable code detected [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/tup/UniPacket.cs(176,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/tup/RequestPacket.cs(106,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/AllLive.Core/Helper/TarsTup/util/BasicClassTypeUtil.cs(128,17): warning CA2200: Re-throwing caught exception changes stack information (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2200) [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/portable-validation/tests/OfflineRegression/tls-sites/SiteTlsHarness.csproj]
+    4 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.08
+PASS BiliBili invalid certificate headersRecorded=0
+PASS BiliBili valid certificate headersRecorded=1
+PASS Douyu invalid certificate headersRecorded=0
+PASS Douyu valid certificate headersRecorded=0
+PASS Huya invalid certificate headersRecorded=0
+PASS Huya valid certificate headersRecorded=0
+PASS Douyin invalid certificate headersRecorded=0
+PASS Douyin valid certificate headersRecorded=1

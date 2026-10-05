@@ -1,0 +1,1328 @@
+{
+  "baselineCommit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "runtime": "8.0.31",
+  "sqliteAssembly": "8.0.6.0",
+  "sourceVariant": "fixed",
+  "execution": "whole selected SyncVM.cs and DatabaseHelper.cs; actual Microsoft.Data.Sqlite 8.0.6 file databases; UI and SignalR doubles",
+  "total": 47,
+  "passed": 47,
+  "failed": 0,
+  "results": [
+    {
+      "id": "favorite-overlay-malformed",
+      "expectation": "Malformed JSON rejects before any favorite mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-merge-malformed-control",
+      "expectation": "Malformed merge input preserves existing rows",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-null",
+      "expectation": "JSON null rejects without deleting existing favorites",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-null-second-item",
+      "expectation": "Null second favorite rejects the entire batch before writing",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-valid-control",
+      "expectation": "Valid replacement commits and announces success once",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-overlay-malformed",
+      "expectation": "Malformed JSON rejects before any history mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-merge-malformed-control",
+      "expectation": "Malformed merge input preserves existing history",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-invalid-date",
+      "expectation": "Invalid date rejects before deleting history",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-late-invalid-date",
+      "expectation": "A later bad date prevents all writes in the batch",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-sync-valid-loses-original-time",
+      "expectation": "Regression: valid sync retains the original time",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2001-01-01 12:00:00"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "add-history-insert-ignores-WatchTime",
+      "expectation": "Regression: INSERT preserves supplied WatchTime",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "insert",
+          "watch_time": "1999-02-03 00:00:00"
+        }
+      ],
+      "writes": [
+        "History:INSERT:insert"
+      ]
+    },
+    {
+      "id": "add-history-update-ignores-WatchTime",
+      "expectation": "Regression: UPDATE preserves supplied WatchTime and metadata",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "updated",
+          "site_name": "虎牙直播",
+          "photo": "updated-photo",
+          "room_id": "old-h",
+          "watch_time": "1999-02-03 00:00:00"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "history-overlay-null",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-null-second-item",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-missing-room",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-missing-site",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-missing-room",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-missing-site",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back deletion and first insert",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f",
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-overlay-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back the whole history batch",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2001-01-01 12:00:00"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h",
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-merge-null",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-merge-null-second-item",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-merge-missing-room",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-merge-missing-site",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-merge-missing-room",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-merge-missing-site",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-merge-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back deletion and first insert",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT:new-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-merge-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back the whole history batch",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2001-01-01 12:00:00"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-merge-update-before-failed-insert-rollback",
+      "expectation": "A prior update in a merge is undone when a later insert fails",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "favorite-valid-batch-deduplicates",
+      "expectation": "Valid multi-item replacement deduplicates using the transaction",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        },
+        {
+          "id": 3,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "second"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f",
+        "Favorite:INSERT:second"
+      ]
+    },
+    {
+      "id": "history-valid-batch-retains-each-time",
+      "expectation": "Valid multi-item replacement persists each original viewing time",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2001-01-01 12:00:00"
+        },
+        {
+          "id": 3,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "second",
+          "watch_time": "2002-01-01 12:34:56"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h",
+        "History:INSERT:second"
+      ]
+    },
+    {
+      "id": "favorite-valid-merge-preserves-existing",
+      "expectation": "Valid merge keeps old favorite and adds new one",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-valid-merge-updates-existing",
+      "expectation": "Valid merge updates timestamp and metadata and keeps other rows",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "changed",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "watch_time": "2005-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "ReceiveFavorite-csharp-null",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "ReceiveFavorite-empty-string",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "ReceiveFavorite-object-instead-of-array",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "ReceiveHistory-csharp-null",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "ReceiveHistory-empty-string",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "ReceiveHistory-object-instead-of-array",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "empty-valid-replacement-clears-only-selected-table",
+      "expectation": "An explicit empty array remains a valid intentional replacement",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "empty-valid-merge-preserves-existing",
+      "expectation": "Empty merges leave old favorites and history intact",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "add-history-default-time-new-default",
+      "expectation": "Ordinary playback without WatchTime retains current-time behavior",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "new-default",
+          "watch_time": "2026-10-06 08:35:30.3652535"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-default"
+      ]
+    },
+    {
+      "id": "add-history-default-time-old-h",
+      "expectation": "Ordinary playback without WatchTime retains current-time behavior",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:30.3697174"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "history-sync-invariant-date-under-other-culture",
+      "expectation": "Protocol timestamps parse consistently regardless of current culture",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2001-01-01 12:00:00"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-missing-date-rejects",
+      "expectation": "Missing history date rejects before mutation",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "database-import-invalid-favorite-validates-whole-batch",
+      "expectation": "Database batch API rejects later invalid items before deletion",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "database-import-invalid-history-validates-whole-batch",
+      "expectation": "Database batch API rejects later invalid items before deletion",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2000-01-01 00:00:00\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2000-01-01 00:00:00"
+        }
+      ],
+      "writes": []
+    }
+  ]
+}

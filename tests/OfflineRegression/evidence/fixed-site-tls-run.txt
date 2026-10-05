@@ -1,0 +1,8 @@
+PASS BiliBili invalid certificate headersRecorded=0
+PASS BiliBili valid certificate headersRecorded=1
+PASS Douyu invalid certificate headersRecorded=0
+PASS Douyu valid certificate headersRecorded=0
+PASS Huya invalid certificate headersRecorded=0
+PASS Huya valid certificate headersRecorded=0
+PASS Douyin invalid certificate headersRecorded=0
+PASS Douyin valid certificate headersRecorded=1

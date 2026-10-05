@@ -1,0 +1,213 @@
+{
+  "commit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "utc": "2026-10-05T23:20:55.0583486Z",
+  "scope": "Linked unchanged production C# under .NET 8; dependencies stubbed; no UWP runtime or external requests",
+  "tests": 29,
+  "passed": 24,
+  "failed": 5,
+  "results": [
+    {
+      "id": "TLS-001",
+      "description": "published WebSocketSharp package must reject certificate errors by default (regression)",
+      "status": "FAIL",
+      "observation": "callback=defaultValidateServerCertificate, IL=172A, assembly=websocket-sharp, Version=1.0.3.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, synthetic certificate=CN=wrong.invalid, certificate errors=RemoteCertificateNameMismatch, RemoteCertificateChainErrors, accepted=True",
+      "error": "System.Exception: Default certificate validator accepted chain/name errors\n   at AuditHarness.Program.Check(Boolean condition, String message) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 28\n   at AuditHarness.Program.<>c.<Register>b__25_0() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 82\n   at AuditHarness.Program.<>c__DisplayClass5_0.<Sync>b__0() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 27\n   at AuditHarness.Program.Main(String[] args) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 201"
+    },
+    {
+      "id": "SIGN-001",
+      "description": "30-second expiry safety rejects boundary and accepts boundary+1",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-002",
+      "description": "descriptor required fields and encryption-round bounds",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-003",
+      "description": "cookie normalization replaces old device IDs without altering account value",
+      "status": "PASS",
+      "observation": "dy_did=d8c8b14ba2f68ed64650c252839c7326; acf_did=d8c8b14ba2f68ed64650c252839c7326; token=<fixture>; empty=",
+      "error": null
+    },
+    {
+      "id": "SIGN-004",
+      "description": "real MD5/form utilities sign ordinary descriptor and encode once",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-005",
+      "description": "special descriptor omits room/time salt",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-006",
+      "description": "warm cache reuses descriptor",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-007",
+      "description": "cache age 299 seconds reused, 300 seconds refreshed",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-008",
+      "description": "eight concurrent cold-cache callers share one descriptor fetch",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-009",
+      "description": "invalid fetched descriptor throws and releases semaphore for next attempt",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-010",
+      "description": "forced refresh fetches despite valid warm cache",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-001",
+      "description": "relative stream joined with base and HTML entity decoded",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-002",
+      "description": "base directory alone rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-003",
+      "description": "direct flv_url media accepted, directory rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-004",
+      "description": "rtmp_live bare CDN directory must not be playable (regression)",
+      "status": "FAIL",
+      "observation": "actual=https://fixture.invalid/live/",
+      "error": "System.Exception: bare directory URL: expected=, actual=https://fixture.invalid/live/\n   at AuditHarness.Program.Check(Boolean condition, String message) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 28\n   at AuditHarness.Program.Equal[T](T expected, T actual, String name) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 29\n   at AuditHarness.Program.<>c.<Register>b__25_14() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 138\n   at AuditHarness.Program.<>c__DisplayClass5_0.<Sync>b__0() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 27\n   at AuditHarness.Program.Main(String[] args) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 201"
+    },
+    {
+      "id": "URL-005",
+      "description": "unsupported file URL is rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-006",
+      "description": "empty CDN list provides default-route placeholder",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-007",
+      "description": "CDN codes trimmed and deduplicated, current code inserted",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-001",
+      "description": "nonzero API errors limited to two attempts, second refreshes descriptor",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-002",
+      "description": "malformed JSON limited to two attempts",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-003",
+      "description": "successful response without data rejected after two attempts",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-004",
+      "description": "missing multirates returns empty quality list",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-005",
+      "description": "one failed CDN does not discard successful CDN URLs",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-006",
+      "description": "all failed CDNs return empty list with two requests per CDN",
+      "status": "PASS",
+      "observation": "GET descriptors=4, POST attempts=6",
+      "error": null
+    },
+    {
+      "id": "API-007",
+      "description": "empty recommendations and search are safe",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-001",
+      "description": "same VM should load successfully after Stop (regression)",
+      "status": "FAIL",
+      "observation": "LastError=ObjectDisposedException, danmaku.Starts=1, qualityCalls=1",
+      "error": "System.Exception: Reload failed: ObjectDisposedException Cannot access a disposed object.\nObject name: 'System.Timers.Timer'.\n   at AuditHarness.Program.Check(Boolean condition, String message) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 28\n   at AuditHarness.Program.<>c.<<Register>b__25_25>d.MoveNext() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 175\n--- End of stack trace from previous location ---\n   at AuditHarness.Program.Main(String[] args) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 201"
+    },
+    {
+      "id": "VM-002",
+      "description": "older quality response must not replace latest quality URL (regression)",
+      "status": "FAIL",
+      "observation": "CurrentQuality=B, CurrentLine=https://fixture.invalid/A.flv",
+      "error": "System.Exception: latest URL: expected=https://fixture.invalid/B.flv, actual=https://fixture.invalid/A.flv\n   at AuditHarness.Program.Check(Boolean condition, String message) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 28\n   at AuditHarness.Program.Equal[T](T expected, T actual, String name) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 29\n   at AuditHarness.Program.<>c.<<Register>b__25_26>d.MoveNext() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 182\n--- End of stack trace from previous location ---\n   at AuditHarness.Program.Main(String[] args) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 201"
+    },
+    {
+      "id": "VM-003",
+      "description": "completed URL request must not emit playback after Stop (regression)",
+      "status": "FAIL",
+      "observation": "ChangedPlayUrl events after Stop=1",
+      "error": "System.Exception: late playback events: expected=0, actual=1\n   at AuditHarness.Program.Check(Boolean condition, String message) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 28\n   at AuditHarness.Program.Equal[T](T expected, T actual, String name) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 29\n   at AuditHarness.Program.<>c.<<Register>b__25_27>d.MoveNext() in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 187\n--- End of stack trace from previous location ---\n   at AuditHarness.Program.Main(String[] args) in /workspace/scratch/abf6e4047974/alllive_audit_stage/harness/Program.cs:line 201"
+    },
+    {
+      "id": "VM-004",
+      "description": "empty URL response preserves existing line and shows an error",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    }
+  ]
+}

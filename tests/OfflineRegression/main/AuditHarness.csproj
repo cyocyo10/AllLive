@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProductionSourceRoot Condition="'$(ProductionSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../../</ProductionSourceRoot>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="WebSocketSharp-netstandard-customheaders" Version="1.0.3" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/WebSocketSecurity.cs" Link="Production/WebSocketSecurity.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="TestDoubles.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Douyu.cs" Link="Production/Douyu.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/DouyuSignHelper.cs" Link="Production/DouyuSignHelper.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/Utils.cs" Link="Production/CoreUtils.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/DanmakuColor.cs" Link="Production/DanmakuColor.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Models/*.cs" Link="Production/Models/%(Filename)%(Extension)" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Interface/*.cs" Link="Production/Interface/%(Filename)%(Extension)" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.UWP/ViewModels/LiveRoomVM.cs" Link="Production/LiveRoomVM.cs" />
+  </ItemGroup>
+</Project>

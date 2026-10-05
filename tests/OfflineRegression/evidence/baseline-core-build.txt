@@ -1,0 +1,12 @@
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/Douyin.cs(49,56): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/AllLive.Core.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/Danmaku/BiliBiliDanmaku.cs(420,13): warning CS0162: Unreachable code detected [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/AllLive.Core.csproj]
+  AllLive.Core -> /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/bin/Release/netstandard2.0/AllLive.Core.dll
+
+Build succeeded.
+
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/Douyin.cs(49,56): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/AllLive.Core.csproj]
+/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/Danmaku/BiliBiliDanmaku.cs(420,13): warning CS0162: Unreachable code detected [/workspace/scratch/abf6e4047974/alllive_fix_stage/r1/baseline/AllLive.Core/AllLive.Core.csproj]
+    2 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.48

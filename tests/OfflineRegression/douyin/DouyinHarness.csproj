@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProductionSourceRoot Condition="'$(ProductionSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../../</ProductionSourceRoot>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <Compile Include="Program.cs" />
+    <Compile Include="TestDoubles.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Danmaku/DouyinDanmaku.cs" Link="Production/DouyinDanmaku.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/WebSocketSecurity.cs" Link="Production/WebSocketSecurity.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/Utils.cs" Link="Production/Utils.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/DanmakuColor.cs" Link="Production/DanmakuColor.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Interface/ILiveDanmaku.cs" Link="Production/ILiveDanmaku.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Models/LiveMessage.cs" Link="Production/LiveMessage.cs" />
+  </ItemGroup>
+</Project>

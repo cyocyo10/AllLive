@@ -1,0 +1,64 @@
+{
+  "tests": 8,
+  "passed": 8,
+  "failed": 0,
+  "scope": "All four real production danmaku classes with no-network transport and HTTP fixtures; shared production validator invoked before simulated HTTP headers; not a real TLS handshake or MITM",
+  "results": [
+    {
+      "site": "BiliBili",
+      "validCertificate": false,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "BiliBili",
+      "validCertificate": true,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 1
+    },
+    {
+      "site": "Douyu",
+      "validCertificate": false,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "Douyu",
+      "validCertificate": true,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "Huya",
+      "validCertificate": false,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "Huya",
+      "validCertificate": true,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "Douyin",
+      "validCertificate": false,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 0
+    },
+    {
+      "site": "Douyin",
+      "validCertificate": true,
+      "status": "PASS",
+      "error": null,
+      "headersRecorded": 1
+    }
+  ]
+}

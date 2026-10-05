@@ -1,0 +1,1312 @@
+{
+  "baselineCommit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "runtime": "8.0.31",
+  "sqliteAssembly": "8.0.6.0",
+  "sourceVariant": "unchanged-c6951df",
+  "execution": "whole selected SyncVM.cs and DatabaseHelper.cs; actual Microsoft.Data.Sqlite 8.0.6 file databases; UI and SignalR doubles",
+  "total": 47,
+  "passed": 10,
+  "failed": 37,
+  "results": [
+    {
+      "id": "favorite-overlay-malformed",
+      "expectation": "Malformed JSON rejects before any favorite mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_0() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 112\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.5928485"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "favorite-merge-malformed-control",
+      "expectation": "Malformed merge input preserves existing rows",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2026-10-06 08:35:26.6811825\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.6811825"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "favorite-overlay-null",
+      "expectation": "JSON null rejects without deleting existing favorites",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_2() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 118\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.6828243"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "favorite-overlay-null-second-item",
+      "expectation": "Null second favorite rejects the entire batch before writing",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_3() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 121\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.6857271"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "favorite-overlay-valid-control",
+      "expectation": "Valid replacement commits and announces success once",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.6961302"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-overlay-malformed",
+      "expectation": "Malformed JSON rejects before any history mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_5() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 129\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "history-merge-malformed-control",
+      "expectation": "Malformed merge input preserves existing history",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2026-10-06 08:35:26.7022413\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7022413"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-overlay-invalid-date",
+      "expectation": "Invalid date rejects before deleting history",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_7() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 135\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "history-overlay-late-invalid-date",
+      "expectation": "A later bad date prevents all writes in the batch",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_8() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 139\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7137944"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-sync-valid-loses-original-time",
+      "expectation": "Regression: valid sync retains the original time",
+      "status": "FAIL",
+      "error": "System.Exception: Sync must preserve original WatchTime\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_9() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 143\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7153837"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "add-history-insert-ignores-WatchTime",
+      "expectation": "Regression: INSERT preserves supplied WatchTime",
+      "status": "FAIL",
+      "error": "System.Exception: INSERT must retain input time\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_10() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 148\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7173015"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "insert",
+          "watch_time": "2026-10-06 08:35:26.7176667"
+        }
+      ],
+      "writes": [
+        "History:INSERT:insert"
+      ]
+    },
+    {
+      "id": "add-history-update-ignores-WatchTime",
+      "expectation": "Regression: UPDATE preserves supplied WatchTime and metadata",
+      "status": "FAIL",
+      "error": "System.Exception: UPDATE must retain supplied fields\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_11() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 154\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "updated",
+          "site_name": "虎牙直播",
+          "photo": "updated-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7191854"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "history-overlay-null",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "history-overlay-null-second-item",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7220052"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-overlay-missing-room",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": " ",
+          "watch_time": "2026-10-06 08:35:26.7233187"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT: "
+      ]
+    },
+    {
+      "id": "history-overlay-missing-site",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "未知",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7245905"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "favorite-overlay-missing-room",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_2.<Main>b__27() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 167\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": " "
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7255232"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT: "
+      ]
+    },
+    {
+      "id": "favorite-overlay-missing-site",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_2.<Main>b__27() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 167\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "未知",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.726988"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "favorite-overlay-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back deletion and first insert",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_0.<Main>b__24() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 175\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7281254"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-overlay-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back the whole history batch",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_0.<Main>b__25() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 185\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7312945"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-merge-null",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "PASS",
+      "preservedAfterFailure": "{\"favorites\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-f\"}],\"history\":[{\"id\":1,\"user_name\":\"old\",\"site_name\":\"虎牙直播\",\"photo\":\"old-photo\",\"room_id\":\"old-h\",\"watch_time\":\"2026-10-06 08:35:26.7325375\"}],\"sequence\":[{\"name\":\"Favorite\",\"seq\":1},{\"name\":\"History\",\"seq\":1}]}",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7325375"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "history-merge-null-second-item",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7336301"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7338133"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-merge-missing-room",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7349151"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": " ",
+          "watch_time": "2026-10-06 08:35:26.7351049"
+        }
+      ],
+      "writes": [
+        "History:INSERT: "
+      ]
+    },
+    {
+      "id": "history-merge-missing-site",
+      "expectation": "Invalid history payload preserves the full existing database",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_1.<Main>b__26() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 163\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7371933"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "未知",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7373875"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "favorite-merge-missing-room",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_2.<Main>b__27() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 167\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": " "
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7383004"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT: "
+      ]
+    },
+    {
+      "id": "favorite-merge-missing-site",
+      "expectation": "Invalid favorite identifiers reject before mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Expected validation error\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c__DisplayClass24_2.<Main>b__27() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 167\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "未知",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7393739"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "favorite-merge-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back deletion and first insert",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_0.<Main>b__24() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 175\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7405084"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-merge-mid-insert-rollback",
+      "expectation": "Real SQLite failure on second insert rolls back the whole history batch",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_0.<Main>b__25() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 185\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7419741"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7422194"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-merge-update-before-failed-insert-rollback",
+      "expectation": "A prior update in a merge is undone when a later insert fails",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_12() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 194\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "changed",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7440357"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "favorite-valid-batch-deduplicates",
+      "expectation": "Valid multi-item replacement deduplicates using the transaction",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        },
+        {
+          "id": 3,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "second"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7454495"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f",
+        "Favorite:INSERT:new-f",
+        "Favorite:INSERT:second"
+      ]
+    },
+    {
+      "id": "history-valid-batch-retains-each-time",
+      "expectation": "Valid multi-item replacement persists each original viewing time",
+      "status": "FAIL",
+      "error": "System.Exception: Expected each original time\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_14() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 204\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.747701"
+        },
+        {
+          "id": 3,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "second",
+          "watch_time": "2026-10-06 08:35:26.7477971"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h",
+        "History:INSERT:second"
+      ]
+    },
+    {
+      "id": "favorite-valid-merge-preserves-existing",
+      "expectation": "Valid merge keeps old favorite and adds new one",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        },
+        {
+          "id": 2,
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.74916"
+        }
+      ],
+      "writes": [
+        "Favorite:INSERT:new-f"
+      ]
+    },
+    {
+      "id": "history-valid-merge-updates-existing",
+      "expectation": "Valid merge updates timestamp and metadata and keeps other rows",
+      "status": "FAIL",
+      "error": "System.Exception: Expected existing row updated with supplied time\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_16() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 213\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "changed",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7508591"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "ReceiveFavorite-csharp-null",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7519425"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "ReceiveFavorite-empty-string",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7532456"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "ReceiveFavorite-object-instead-of-array",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7544159"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "ReceiveHistory-csharp-null",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "ReceiveHistory-empty-string",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "ReceiveHistory-object-instead-of-array",
+      "expectation": "Invalid whole payload rejects without mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c__DisplayClass24_4.<Main>b__32() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 218\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "empty-valid-replacement-clears-only-selected-table",
+      "expectation": "An explicit empty array remains a valid intentional replacement",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7595494"
+        }
+      ],
+      "writes": [
+        "Favorite:DELETE:old-f"
+      ]
+    },
+    {
+      "id": "empty-valid-merge-preserves-existing",
+      "expectation": "Empty merges leave old favorites and history intact",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7608648"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "add-history-default-time-new-default",
+      "expectation": "Ordinary playback without WatchTime retains current-time behavior",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7620595"
+        },
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "new-default",
+          "watch_time": "2026-10-06 08:35:26.7623912"
+        }
+      ],
+      "writes": [
+        "History:INSERT:new-default"
+      ]
+    },
+    {
+      "id": "add-history-default-time-old-h",
+      "expectation": "Ordinary playback without WatchTime retains current-time behavior",
+      "status": "PASS",
+      "preservedAfterFailure": null,
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7635745"
+        }
+      ],
+      "writes": [
+        "History:UPDATE:old-h"
+      ]
+    },
+    {
+      "id": "history-sync-invariant-date-under-other-culture",
+      "expectation": "Protocol timestamps parse consistently regardless of current culture",
+      "status": "FAIL",
+      "error": "System.Exception: Expected unchanged original time\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.<>c.<Main>b__24_19() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 239\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 2,
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "watch_time": "2026-10-06 08:35:26.7679268"
+        }
+      ],
+      "writes": [
+        "History:DELETE:old-h",
+        "History:INSERT:new-h"
+      ]
+    },
+    {
+      "id": "history-missing-date-rejects",
+      "expectation": "Missing history date rejects before mutation",
+      "status": "FAIL",
+      "error": "System.Exception: Existing rows, IDs and SQLite sequences must remain exactly unchanged\n   at Program.Assert(Boolean value, String message) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 27\n   at Program.Unchanged(Boolean noWrites) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 70\n   at Program.<>c.<Main>b__24_20() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 243\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [],
+      "writes": [
+        "History:DELETE:old-h"
+      ]
+    },
+    {
+      "id": "database-import-invalid-favorite-validates-whole-batch",
+      "expectation": "Database batch API rejects later invalid items before deletion",
+      "status": "FAIL",
+      "error": "System.MissingMethodException: The atomic import API is absent from this source version.\n   at Program.ImportBatch(String method, Object items) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 93\n   at Program.<>c.<Main>b__24_21() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 246\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7708804"
+        }
+      ],
+      "writes": []
+    },
+    {
+      "id": "database-import-invalid-history-validates-whole-batch",
+      "expectation": "Database batch API rejects later invalid items before deletion",
+      "status": "FAIL",
+      "error": "System.MissingMethodException: The atomic import API is absent from this source version.\n   at Program.ImportBatch(String method, Object items) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 93\n   at Program.<>c.<Main>b__24_22() in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 250\n   at Program.Case(String id, String expectation, Action action) in /workspace/scratch/abf6e4047974/alllive_fix_stage/r1/sync_harness/Program.cs:line 80",
+      "favoriteRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-f"
+        }
+      ],
+      "historyRows": [
+        {
+          "id": 1,
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "old-photo",
+          "room_id": "old-h",
+          "watch_time": "2026-10-06 08:35:26.7721312"
+        }
+      ],
+      "writes": []
+    }
+  ]
+}

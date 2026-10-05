@@ -1,0 +1,311 @@
+{
+  "commit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "utc": "2026-10-05T23:45:21.3980956Z",
+  "scope": "Linked patched production C# under .NET 8; dependencies stubbed; no UWP runtime or external requests",
+  "tests": 43,
+  "passed": 43,
+  "failed": 0,
+  "results": [
+    {
+      "id": "TLS-001",
+      "description": "application WebSocket configuration must reject certificate errors (original security assertion)",
+      "status": "PASS",
+      "observation": "callback=<Configure>b__0_0, IL=042C060E0416FE012A162A, dependencyAssembly=websocket-sharp, Version=1.0.3.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, validatorAssembly=AuditHarness, synthetic certificate=CN=wrong.invalid, certificate errors=RemoteCertificateNameMismatch, RemoteCertificateChainErrors, accepted=False",
+      "error": null
+    },
+    {
+      "id": "TLS-002",
+      "description": "valid platform certificate result is accepted, TLS 1.2 retained",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "TLS-003",
+      "description": "name, chain, self-signed and missing certificates fail closed individually",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "TLS-004",
+      "description": "genuine offline private-CA leaf chain validates without changing system trust",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-001",
+      "description": "30-second expiry safety rejects boundary and accepts boundary+1",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-002",
+      "description": "descriptor required fields and encryption-round bounds",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-003",
+      "description": "cookie normalization replaces old device IDs without altering account value",
+      "status": "PASS",
+      "observation": "dy_did=c1d09f00d66fa2d9237c19ae91d39aa4; acf_did=c1d09f00d66fa2d9237c19ae91d39aa4; token=<fixture>; empty=",
+      "error": null
+    },
+    {
+      "id": "SIGN-004",
+      "description": "real MD5/form utilities sign ordinary descriptor and encode once",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-005",
+      "description": "special descriptor omits room/time salt",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-006",
+      "description": "warm cache reuses descriptor",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-007",
+      "description": "cache age 299 seconds reused, 300 seconds refreshed",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-008",
+      "description": "eight concurrent cold-cache callers share one descriptor fetch",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-009",
+      "description": "invalid fetched descriptor throws and releases semaphore for next attempt",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "SIGN-010",
+      "description": "forced refresh fetches despite valid warm cache",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-001",
+      "description": "relative stream joined with base and HTML entity decoded",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-002",
+      "description": "base directory alone rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-003",
+      "description": "direct flv_url media accepted, directory rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-004",
+      "description": "rtmp_live bare CDN directory must not be playable (regression)",
+      "status": "PASS",
+      "observation": "actual=",
+      "error": null
+    },
+    {
+      "id": "URL-008",
+      "description": "host-only, escaped slash, query-only directory rejected; signed stream path accepted",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-005",
+      "description": "unsupported file URL is rejected",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-006",
+      "description": "empty CDN list provides default-route placeholder",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "URL-007",
+      "description": "CDN codes trimmed and deduplicated, current code inserted",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-001",
+      "description": "nonzero API errors limited to two attempts, second refreshes descriptor",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-002",
+      "description": "malformed JSON limited to two attempts",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-003",
+      "description": "successful response without data rejected after two attempts",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-004",
+      "description": "missing multirates returns empty quality list",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-005",
+      "description": "one failed CDN does not discard successful CDN URLs",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "API-006",
+      "description": "all failed CDNs return empty list with two requests per CDN",
+      "status": "PASS",
+      "observation": "GET descriptors=4, POST attempts=6",
+      "error": null
+    },
+    {
+      "id": "API-007",
+      "description": "empty recommendations and search are safe",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-001",
+      "description": "same VM should load successfully after Stop (regression)",
+      "status": "PASS",
+      "observation": "LastError=none, danmaku.Starts=2, qualityCalls=2",
+      "error": null
+    },
+    {
+      "id": "VM-002",
+      "description": "older quality response must not replace latest quality URL (regression)",
+      "status": "PASS",
+      "observation": "CurrentQuality=B, CurrentLine=https://fixture.invalid/B.flv",
+      "error": null
+    },
+    {
+      "id": "VM-003",
+      "description": "completed URL request must not emit playback after Stop (regression)",
+      "status": "PASS",
+      "observation": "ChangedPlayUrl events after Stop=0",
+      "error": null
+    },
+    {
+      "id": "VM-004",
+      "description": "empty URL response preserves existing line and shows an error",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-005",
+      "description": "stopped room-detail response cannot start danmaku or update room",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-006",
+      "description": "new room result wins over older pending room result",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-007",
+      "description": "reload waits for old danmaku Stop and survives late stop completion",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-008",
+      "description": "old failed URL request cannot emit a stale error toast",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-009",
+      "description": "queued old message batch is discarded after Stop and reload",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-010",
+      "description": "queued old online event cannot modify a restarted room",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-011",
+      "description": "SC countdown works when settings load before room navigation",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-012",
+      "description": "SC countdown timer is recreated after Stop and refresh",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-013",
+      "description": "old message enqueued after Stop remains stale in the new timer",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    },
+    {
+      "id": "VM-014",
+      "description": "queued old SC tick cannot decrement refreshed room messages",
+      "status": "PASS",
+      "observation": null,
+      "error": null
+    }
+  ]
+}

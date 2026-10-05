@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+    <ProductionSourceRoot Condition="'$(ProductionSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../../</ProductionSourceRoot><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>disable</ImplicitUsings><Nullable>disable</Nullable><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+<ItemGroup>
+<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+<PackageReference Include="BrotliSharpLib" Version="0.3.3" />
+<Compile Include="Compat.cs" /><Compile Include="Program.cs" /><Compile Include="TestDoubles.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Danmaku/*.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/WebSocketSecurity.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/Utils.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/DanmakuColor.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Helper/TarsTup/**/*.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Models/Tars/*.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Models/LiveMessage.cs" />
+<Compile Include="$(ProductionSourceRoot)/AllLive.Core/Interface/ILiveDanmaku.cs" />
+</ItemGroup></Project>

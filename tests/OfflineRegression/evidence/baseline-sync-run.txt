@@ -1,0 +1,48 @@
+FAIL favorite-overlay-malformed: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS favorite-merge-malformed-control
+FAIL favorite-overlay-null: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL favorite-overlay-null-second-item: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS favorite-overlay-valid-control
+FAIL history-overlay-malformed: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS history-merge-malformed-control
+FAIL history-overlay-invalid-date: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-overlay-late-invalid-date: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-sync-valid-loses-original-time: Sync must preserve original WatchTime
+FAIL add-history-insert-ignores-WatchTime: INSERT must retain input time
+FAIL add-history-update-ignores-WatchTime: UPDATE must retain supplied fields
+FAIL history-overlay-null: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-overlay-null-second-item: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-overlay-missing-room: Expected validation error
+FAIL history-overlay-missing-site: Expected validation error
+FAIL favorite-overlay-missing-room: Expected validation error
+FAIL favorite-overlay-missing-site: Expected validation error
+FAIL favorite-overlay-mid-insert-rollback: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-overlay-mid-insert-rollback: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS history-merge-null
+FAIL history-merge-null-second-item: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-merge-missing-room: Expected validation error
+FAIL history-merge-missing-site: Expected validation error
+FAIL favorite-merge-missing-room: Expected validation error
+FAIL favorite-merge-missing-site: Expected validation error
+FAIL favorite-merge-mid-insert-rollback: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-merge-mid-insert-rollback: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL history-merge-update-before-failed-insert-rollback: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS favorite-valid-batch-deduplicates
+FAIL history-valid-batch-retains-each-time: Expected each original time
+PASS favorite-valid-merge-preserves-existing
+FAIL history-valid-merge-updates-existing: Expected existing row updated with supplied time
+FAIL ReceiveFavorite-csharp-null: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL ReceiveFavorite-empty-string: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL ReceiveFavorite-object-instead-of-array: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL ReceiveHistory-csharp-null: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL ReceiveHistory-empty-string: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL ReceiveHistory-object-instead-of-array: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+PASS empty-valid-replacement-clears-only-selected-table
+PASS empty-valid-merge-preserves-existing
+PASS add-history-default-time-new-default
+PASS add-history-default-time-old-h
+FAIL history-sync-invariant-date-under-other-culture: Expected unchanged original time
+FAIL history-missing-date-rejects: Existing rows, IDs and SQLite sequences must remain exactly unchanged
+FAIL database-import-invalid-favorite-validates-whole-batch: The atomic import API is absent from this source version.
+FAIL database-import-invalid-history-validates-whole-batch: The atomic import API is absent from this source version.
+10/47 passed using real Microsoft.Data.Sqlite 8.0.6.0.

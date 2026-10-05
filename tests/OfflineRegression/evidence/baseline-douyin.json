@@ -1,0 +1,101 @@
+{
+  "GeneratedUtc": "2026-10-05T23:19:17.2057301+00:00",
+  "ProductionCommit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "Framework": ".NET 8.0.31",
+  "OS": "Debian GNU/Linux 13 (trixie)",
+  "Scope": "Exact source execution with fake WebSocket, fake signature, and fake protobuf dependencies; no Windows/UWP or live service execution.",
+  "HTTPCalls": 0,
+  "DefaultSignatureCalls": 0,
+  "Results": [
+    {
+      "Name": "pending-signature-completes-after-stop",
+      "Status": "REPRODUCED",
+      "DurationMs": 23,
+      "ExpectedSafeBehavior": "After Stop completes, an earlier Start must not create or open a socket.",
+      "Observed": {
+        "ConnectCallsWhenStopReturned": 0,
+        "ConnectCallsAfterPendingSignatureReleased": 1,
+        "SocketStateAfterPendingSignatureReleased": "Open",
+        "IsStoppingDespiteOpenSocket": true,
+        "HeartbeatSendCallsAfterStop": 1
+      },
+      "Error": null
+    },
+    {
+      "Name": "normal-start-then-stop-control",
+      "Status": "PASS",
+      "DurationMs": 14,
+      "ExpectedSafeBehavior": "Stop closes an established socket and clears socket/timer state.",
+      "Observed": {
+        "ConnectCalls": 1,
+        "CloseCalls": 1,
+        "SocketState": "Closed",
+        "SocketFieldCleared": true,
+        "TimerFieldCleared": true
+      },
+      "Error": null
+    },
+    {
+      "Name": "retry-failure-stalls-after-first-retry",
+      "Status": "REPRODUCED",
+      "DurationMs": 10926,
+      "ExpectedSafeBehavior": "A failed retry should schedule the remaining permitted attempts or report terminal failure.",
+      "Observed": {
+        "FailureFixture": "Connect throws",
+        "ConnectCalls": 2,
+        "FirstRetryMs": 5022,
+        "ObservedUntilMs": 10925,
+        "WaitAfterFirstRetryMs": 5900,
+        "ReconnectAttemptsField": 1,
+        "ReconnectTokenStillPresent": true,
+        "ReconnectTokenCanceled": false,
+        "EndpointHosts": [
+          "webcast3-ws-web-lq.douyin.com",
+          "webcast5-ws-web-lf.douyin.com"
+        ],
+        "OnCloseMessages": [
+          "Connection lost, reconnecting (1/5)"
+        ],
+        "NoTerminalFailureNotification": true
+      },
+      "Error": null
+    },
+    {
+      "Name": "retry-error-event-stalls-after-first-retry",
+      "Status": "REPRODUCED",
+      "DurationMs": 10908,
+      "ExpectedSafeBehavior": "A retry error event should schedule the remaining permitted attempts or report terminal failure.",
+      "Observed": {
+        "FailureFixture": "Connect emits OnError",
+        "ConnectCalls": 2,
+        "FirstRetryMs": 5007,
+        "ObservedUntilMs": 10908,
+        "WaitAfterFirstRetryMs": 5900,
+        "ReconnectAttemptsField": 1,
+        "ReconnectTokenStillPresent": true,
+        "ReconnectTokenCanceled": false,
+        "EndpointHosts": [
+          "webcast3-ws-web-lq.douyin.com",
+          "webcast5-ws-web-lf.douyin.com"
+        ],
+        "OnCloseMessages": [
+          "Connection lost, reconnecting (1/5)"
+        ],
+        "NoTerminalFailureNotification": true
+      },
+      "Error": null
+    },
+    {
+      "Name": "stop-cancels-pending-retry-control",
+      "Status": "PASS",
+      "DurationMs": 5702,
+      "ExpectedSafeBehavior": "Stop before the five-second retry deadline prevents any retry connection.",
+      "Observed": {
+        "ConnectCallsAfter5700Ms": 1,
+        "ReconnectTokenCleared": true,
+        "SocketFieldCleared": true
+      },
+      "Error": null
+    }
+  ]
+}

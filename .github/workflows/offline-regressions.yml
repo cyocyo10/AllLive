@@ -1,0 +1,47 @@
+name: Offline regressions
+
+on:
+  push:
+    paths:
+      - 'AllLive.Core/**'
+      - 'AllLive.UWP/ViewModels/LiveRoomVM.cs'
+      - 'AllLive.UWP/ViewModels/SyncVM.cs'
+      - 'AllLive.UWP/Helper/DatabaseHelper.cs'
+      - 'AllLive.UWP/Models/**'
+      - 'tests/OfflineRegression/**'
+      - '.github/workflows/offline-regressions.yml'
+  pull_request:
+    paths:
+      - 'AllLive.Core/**'
+      - 'AllLive.UWP/ViewModels/LiveRoomVM.cs'
+      - 'AllLive.UWP/ViewModels/SyncVM.cs'
+      - 'AllLive.UWP/Helper/DatabaseHelper.cs'
+      - 'AllLive.UWP/Models/**'
+      - 'tests/OfflineRegression/**'
+      - '.github/workflows/offline-regressions.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build complete Core project
+        working-directory: tests/OfflineRegression
+        run: dotnet build ../../AllLive.Core/AllLive.Core.csproj --configuration Release
+      - name: Run offline regression suites
+        run: bash tests/OfflineRegression/run.sh
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-regression-results
+          path: tests/OfflineRegression/results/*.json
+          if-no-files-found: warn

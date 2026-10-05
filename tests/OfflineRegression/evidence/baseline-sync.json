@@ -1,0 +1,529 @@
+{
+  "commit": "c6951df959b7ead0d93edc087188788b49f1e273",
+  "runtime": "8.0.31",
+  "execution": "whole unchanged SyncVM.cs and DatabaseHelper.cs; in-memory SQL/UI/SignalR doubles",
+  "results": [
+    {
+      "id": "favorite-overlay-malformed",
+      "expectation": "Malformed JSON throws after deleting existing favorite rows",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 0,
+      "history": 1,
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8000925+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM Favorite"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM Favorite",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "id": "favorite-merge-malformed-control",
+      "expectation": "Malformed merge input leaves old favorite rows intact",
+      "status": "PASS",
+      "reproduction": "CONTROL",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8453676+09:00"
+        }
+      ],
+      "sql": [],
+      "sqlParameters": []
+    },
+    {
+      "id": "favorite-overlay-null",
+      "expectation": "JSON null throws after deleting existing favorite rows",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 0,
+      "history": 1,
+      "favoriteRows": [],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8462905+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM Favorite"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM Favorite",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "id": "favorite-overlay-null-second-item",
+      "expectation": "Valid first favorite remains after null second element aborts processing",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "new",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.847839+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM Favorite",
+        "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+        "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+        "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM Favorite",
+          "parameters": {}
+        },
+        {
+          "sql": "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-f"
+          }
+        },
+        {
+          "sql": "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-f"
+          }
+        },
+        {
+          "sql": "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);",
+          "parameters": {
+            "@user_name": "new",
+            "@site_name": "斗鱼直播",
+            "@photo": "",
+            "@room_id": "new-f"
+          }
+        }
+      ]
+    },
+    {
+      "id": "favorite-overlay-valid-control",
+      "expectation": "Valid replacement removes old favorite and adds the expected new favorite",
+      "status": "PASS",
+      "reproduction": "CONTROL",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.877067+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM Favorite",
+        "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+        "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+        "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM Favorite",
+          "parameters": {}
+        },
+        {
+          "sql": "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-f"
+          }
+        },
+        {
+          "sql": "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-f"
+          }
+        },
+        {
+          "sql": "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);",
+          "parameters": {
+            "@user_name": "",
+            "@site_name": "斗鱼直播",
+            "@photo": "",
+            "@room_id": "new-f"
+          }
+        }
+      ]
+    },
+    {
+      "id": "history-overlay-malformed",
+      "expectation": "Malformed JSON throws after deleting existing history rows",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 0,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [],
+      "sql": [
+        "DELETE FROM History"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM History",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "id": "history-merge-malformed-control",
+      "expectation": "Malformed merge input leaves old history rows intact",
+      "status": "PASS",
+      "reproduction": "CONTROL",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8781717+09:00"
+        }
+      ],
+      "sql": [],
+      "sqlParameters": []
+    },
+    {
+      "id": "history-overlay-invalid-date",
+      "expectation": "Well-formed JSON with invalid updateTime deletes old history before throwing",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 0,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [],
+      "sql": [
+        "DELETE FROM History"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM History",
+          "parameters": {}
+        }
+      ]
+    },
+    {
+      "id": "history-overlay-late-invalid-date",
+      "expectation": "Valid first history is committed before second date parse fails",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8869355+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM History",
+        "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+        "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM History",
+          "parameters": {}
+        },
+        {
+          "sql": "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-h"
+          }
+        },
+        {
+          "sql": "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);",
+          "parameters": {
+            "@user_name": "",
+            "@site_name": "斗鱼直播",
+            "@photo": "",
+            "@room_id": "new-h",
+            "@time": "2026-10-06T08:25:15.8869355+09:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "history-sync-valid-loses-original-time",
+      "expectation": "Sync successfully parses historical time but AddHistory binds current time",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "",
+          "site_name": "斗鱼直播",
+          "photo": "",
+          "room_id": "new-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8871738+09:00"
+        }
+      ],
+      "sql": [
+        "DELETE FROM History",
+        "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+        "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "DELETE FROM History",
+          "parameters": {}
+        },
+        {
+          "sql": "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "斗鱼直播",
+            "@room_id": "new-h"
+          }
+        },
+        {
+          "sql": "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);",
+          "parameters": {
+            "@user_name": "",
+            "@site_name": "斗鱼直播",
+            "@photo": "",
+            "@room_id": "new-h",
+            "@time": "2026-10-06T08:25:15.8871738+09:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-history-insert-ignores-WatchTime",
+      "expectation": "INSERT path binds DateTime.Now rather than input WatchTime",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 2,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8872461+09:00"
+        },
+        {
+          "user_name": "",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "insert",
+          "id": 2,
+          "watch_time": "2026-10-06T08:25:15.8875149+09:00"
+        }
+      ],
+      "sql": [
+        "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+        "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "虎牙直播",
+            "@room_id": "insert"
+          }
+        },
+        {
+          "sql": "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);",
+          "parameters": {
+            "@user_name": "",
+            "@site_name": "虎牙直播",
+            "@photo": "",
+            "@room_id": "insert",
+            "@time": "2026-10-06T08:25:15.8875149+09:00"
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-history-update-ignores-WatchTime",
+      "expectation": "UPDATE path binds DateTime.Now rather than input WatchTime",
+      "status": "FAIL",
+      "reproduction": "REPRODUCED",
+      "harness_expectation": "MATCHED",
+      "favorites": 1,
+      "history": 1,
+      "favoriteRows": [
+        {
+          "user_name": "old",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-f",
+          "id": 1
+        }
+      ],
+      "historyRows": [
+        {
+          "user_name": "updated",
+          "site_name": "虎牙直播",
+          "photo": "",
+          "room_id": "old-h",
+          "id": 1,
+          "watch_time": "2026-10-06T08:25:15.8878029+09:00"
+        }
+      ],
+      "sql": [
+        "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+        "UPDATE History SET watch_time=@time, user_name=@user_name, photo=@photo WHERE room_id=@room_id and site_name=@site_name"
+      ],
+      "sqlParameters": [
+        {
+          "sql": "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "虎牙直播",
+            "@room_id": "old-h"
+          }
+        },
+        {
+          "sql": "UPDATE History SET watch_time=@time, user_name=@user_name, photo=@photo WHERE room_id=@room_id and site_name=@site_name",
+          "parameters": {
+            "@site_name": "虎牙直播",
+            "@room_id": "old-h",
+            "@time": "2026-10-06T08:25:15.8878029+09:00",
+            "@user_name": "updated",
+            "@photo": ""
+          }
+        }
+      ]
+    }
+  ]
+}
