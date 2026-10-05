@@ -88,27 +88,64 @@ watch_time DATETIME);
 
         public static void AddFavorite(FavoriteItem item)
         {
-            // 空值检查
-            if (string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
+            if (item == null || string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
             {
                 return;
             }
 
             lock (_syncLock)
             {
-                System.Diagnostics.Trace.WriteLine($"[DatabaseHelper.AddFavorite] 添加收藏: {item.SiteName}-{item.RoomID}");
-                // 在同一锁内调用内部方法，避免重入死锁
-                if (CheckFavoriteCore(item.RoomID, item.SiteName) != null) { return; }
-                using (var command = new SqliteCommand())
+                AddFavoriteCore(item);
+            }
+        }
+
+        // Parse and validate the complete batch before calling this method. The lock
+        // and transaction cover deletion, duplicate checks, and every insert.
+        public static void ImportFavorites(IEnumerable<FavoriteItem> items, bool overlay)
+        {
+            if (items == null) { throw new ArgumentNullException(nameof(items)); }
+            var batch = items.ToList();
+            if (batch.Any(item => item == null || string.IsNullOrWhiteSpace(item.RoomID) || string.IsNullOrWhiteSpace(item.SiteName)))
+            {
+                throw new ArgumentException("Invalid favorite in sync batch.", nameof(items));
+            }
+
+            lock (_syncLock)
+            {
+                using (var transaction = db.BeginTransaction())
                 {
-                    command.Connection = db;
-                    command.CommandText = "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);";
-                    command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
-                    command.Parameters.AddWithValue("@site_name", item.SiteName);
-                    command.Parameters.AddWithValue("@photo", item.Photo ?? "");
-                    command.Parameters.AddWithValue("@room_id", item.RoomID);
-                    command.ExecuteNonQuery();
+                    if (overlay)
+                    {
+                        using (var command = new SqliteCommand("DELETE FROM Favorite", db))
+                        {
+                            command.Transaction = transaction;
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    foreach (var item in batch)
+                    {
+                        AddFavoriteCore(item, transaction);
+                    }
+                    transaction.Commit();
+                    // Disposing an uncommitted transaction rolls back the entire batch.
                 }
+            }
+        }
+
+        private static void AddFavoriteCore(FavoriteItem item, SqliteTransaction transaction = null)
+        {
+            System.Diagnostics.Trace.WriteLine($"[DatabaseHelper.AddFavorite] 添加收藏: {item.SiteName}-{item.RoomID}");
+            if (CheckFavoriteCore(item.RoomID, item.SiteName, transaction) != null) { return; }
+            using (var command = new SqliteCommand())
+            {
+                command.Connection = db;
+                command.Transaction = transaction;
+                command.CommandText = "INSERT INTO Favorite VALUES (NULL,@user_name,@site_name, @photo, @room_id);";
+                command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
+                command.Parameters.AddWithValue("@site_name", item.SiteName);
+                command.Parameters.AddWithValue("@photo", item.Photo ?? "");
+                command.Parameters.AddWithValue("@room_id", item.RoomID);
+                command.ExecuteNonQuery();
             }
         }
 
@@ -125,11 +162,12 @@ watch_time DATETIME);
         }
 
         // 内部版本：调用方已持有 _syncLock，直接执行查询
-        private static long? CheckFavoriteCore(string roomId, string siteName)
+        private static long? CheckFavoriteCore(string roomId, string siteName, SqliteTransaction transaction = null)
         {
             using (var command = new SqliteCommand())
             {
                 command.Connection = db;
+                command.Transaction = transaction;
                 command.CommandText = "SELECT id FROM Favorite WHERE room_id=@room_id and site_name=@site_name";
                 command.Parameters.AddWithValue("@site_name", siteName);
                 command.Parameters.AddWithValue("@room_id", roomId);
@@ -200,45 +238,81 @@ watch_time DATETIME);
 
         public static void AddHistory(HistoryItem item)
         {
-            // 空值检查，防止 SQLite 参数绑定失败
-            if (string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
+            if (item == null || string.IsNullOrEmpty(item.RoomID) || string.IsNullOrEmpty(item.SiteName))
             {
                 return;
             }
 
             lock (_syncLock)
             {
-                System.Diagnostics.Trace.WriteLine($"[DatabaseHelper.AddHistory] 添加/更新历史: {item.SiteName}-{item.RoomID}");
-                // 在同一锁内调用内部方法，避免重入死锁
-                var hisId = CheckHistoryCore(item.RoomID, item.SiteName);
-                if (hisId != null)
-                {
-                    // 更新时间和用户信息
-                    using (var command = new SqliteCommand())
-                    {
-                        command.Connection = db;
-                        command.CommandText = "UPDATE History SET watch_time=@time, user_name=@user_name, photo=@photo WHERE room_id=@room_id and site_name=@site_name";
-                        command.Parameters.AddWithValue("@site_name", item.SiteName);
-                        command.Parameters.AddWithValue("@room_id", item.RoomID);
-                        command.Parameters.AddWithValue("@time", DateTime.Now);
-                        command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
-                        command.Parameters.AddWithValue("@photo", item.Photo ?? "");
-                        command.ExecuteNonQuery();
-                    }
-                    return;
-                }
+                AddHistoryCore(item);
+            }
+        }
 
+        public static void ImportHistory(IEnumerable<HistoryItem> items, bool overlay)
+        {
+            if (items == null) { throw new ArgumentNullException(nameof(items)); }
+            var batch = items.ToList();
+            if (batch.Any(item => item == null || string.IsNullOrWhiteSpace(item.RoomID) || string.IsNullOrWhiteSpace(item.SiteName)))
+            {
+                throw new ArgumentException("Invalid history in sync batch.", nameof(items));
+            }
+
+            lock (_syncLock)
+            {
+                using (var transaction = db.BeginTransaction())
+                {
+                    if (overlay)
+                    {
+                        using (var command = new SqliteCommand("DELETE FROM History", db))
+                        {
+                            command.Transaction = transaction;
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    foreach (var item in batch)
+                    {
+                        AddHistoryCore(item, transaction);
+                    }
+                    transaction.Commit();
+                }
+            }
+        }
+
+        private static void AddHistoryCore(HistoryItem item, SqliteTransaction transaction = null)
+        {
+            System.Diagnostics.Trace.WriteLine($"[DatabaseHelper.AddHistory] 添加/更新历史: {item.SiteName}-{item.RoomID}");
+            // Ordinary playback callers omit WatchTime; imported times must survive.
+            var watchTime = item.WatchTime == default(DateTime) ? DateTime.Now : item.WatchTime;
+            var hisId = CheckHistoryCore(item.RoomID, item.SiteName, transaction);
+            if (hisId != null)
+            {
                 using (var command = new SqliteCommand())
                 {
                     command.Connection = db;
-                    command.CommandText = "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);";
-                    command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
+                    command.Transaction = transaction;
+                    command.CommandText = "UPDATE History SET watch_time=@time, user_name=@user_name, photo=@photo WHERE room_id=@room_id and site_name=@site_name";
                     command.Parameters.AddWithValue("@site_name", item.SiteName);
-                    command.Parameters.AddWithValue("@photo", item.Photo ?? "");
                     command.Parameters.AddWithValue("@room_id", item.RoomID);
-                    command.Parameters.AddWithValue("@time", DateTime.Now);
+                    command.Parameters.AddWithValue("@time", watchTime);
+                    command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
+                    command.Parameters.AddWithValue("@photo", item.Photo ?? "");
                     command.ExecuteNonQuery();
                 }
+                return;
+            }
+
+            using (var command = new SqliteCommand())
+            {
+                command.Connection = db;
+                command.Transaction = transaction;
+                command.CommandText = "INSERT INTO History VALUES (NULL,@user_name,@site_name, @photo, @room_id,@time);";
+                command.Parameters.AddWithValue("@user_name", item.UserName ?? "");
+                command.Parameters.AddWithValue("@site_name", item.SiteName);
+                command.Parameters.AddWithValue("@photo", item.Photo ?? "");
+                command.Parameters.AddWithValue("@room_id", item.RoomID);
+                command.Parameters.AddWithValue("@time", watchTime);
+                command.ExecuteNonQuery();
             }
         }
 
@@ -255,11 +329,12 @@ watch_time DATETIME);
         }
 
         // 内部版本：调用方已持有 _syncLock，直接执行查询
-        private static long? CheckHistoryCore(string roomId, string siteName)
+        private static long? CheckHistoryCore(string roomId, string siteName, SqliteTransaction transaction = null)
         {
             using (var command = new SqliteCommand())
             {
                 command.Connection = db;
+                command.Transaction = transaction;
                 command.CommandText = "SELECT id FROM History WHERE room_id=@room_id and site_name=@site_name";
                 command.Parameters.AddWithValue("@site_name", siteName);
                 command.Parameters.AddWithValue("@room_id", roomId);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -174,24 +175,24 @@ namespace AllLive.UWP.ViewModels
 
         private void ReceiveFavorite(bool overlay, string content)
         {
-            if (overlay)
-            {
-                DatabaseHelper.DeleteFavorite();
-            }
-            var items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<FavoriteJsonItem>>(content);
+            var items = JsonConvert.DeserializeObject<List<FavoriteJsonItem>>(content);
+            if (items == null) { throw new JsonSerializationException("Favorite sync data must be an array."); }
+            var favorites = new List<FavoriteItem>();
             foreach (var item in items)
             {
-                if (DatabaseHelper.CheckFavorite(item.RoomId, item.SiteName) == null)
+                if (item == null || string.IsNullOrWhiteSpace(item.RoomId) || string.IsNullOrWhiteSpace(item.SiteId))
                 {
-                    DatabaseHelper.AddFavorite(new FavoriteItem()
-                    {
-                        SiteName = item.SiteName,
-                        RoomID = item.RoomId,
-                        UserName = item.UserName,
-                        Photo = item.Face,
-                    });
+                    throw new JsonSerializationException("Invalid favorite in sync data.");
                 }
+                favorites.Add(new FavoriteItem()
+                {
+                    SiteName = item.SiteName,
+                    RoomID = item.RoomId,
+                    UserName = item.UserName,
+                    Photo = item.Face,
+                });
             }
+            DatabaseHelper.ImportFavorites(favorites, overlay);
             ShowMessage("已同步关注列表");
             _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
              {
@@ -201,22 +202,25 @@ namespace AllLive.UWP.ViewModels
 
         private void ReceiveHistory(bool overlay, string content)
         {
-            if (overlay)
-            {
-                DatabaseHelper.DeleteHistory();
-            }
-            var items = Newtonsoft.Json.JsonConvert.DeserializeObject<List<HistoryJsonItem>>(content);
+            var items = JsonConvert.DeserializeObject<List<HistoryJsonItem>>(content);
+            if (items == null) { throw new JsonSerializationException("History sync data must be an array."); }
+            var history = new List<HistoryItem>();
             foreach (var item in items)
             {
-                DatabaseHelper.AddHistory(new HistoryItem()
+                if (item == null || string.IsNullOrWhiteSpace(item.RoomId) || string.IsNullOrWhiteSpace(item.SiteId))
                 {
-                    WatchTime = DateTime.Parse(item.UpdateTime),
+                    throw new JsonSerializationException("Invalid history in sync data.");
+                }
+                history.Add(new HistoryItem()
+                {
+                    WatchTime = DateTime.Parse(item.UpdateTime, CultureInfo.InvariantCulture),
                     SiteName = item.SiteName,
                     RoomID = item.RoomId,
                     UserName = item.UserName,
                     Photo = item.Face,
                 });
             }
+            DatabaseHelper.ImportHistory(history, overlay);
             ShowMessage("已同步历史记录");
         }
 
