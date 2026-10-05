@@ -45,6 +45,9 @@ namespace AllLive.Core.Danmaku
         private CancellationTokenSource reconnectTokenSource;
         private readonly SemaphoreSlim _connectionSemaphore = new SemaphoreSlim(1, 1);
         private Func<string, string, Task<string>> signatureProvider;
+        private readonly object stateLock = new object();
+        private long sessionGeneration;
+        private long socketGeneration;
 
         public DouyinDanmaku()
         {
@@ -58,23 +61,41 @@ namespace AllLive.Core.Danmaku
 
         public async Task Start(object args)
         {
-            danmakuArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
-            
-            Trace.WriteLine($"========== DouyinDanmaku.Start ==========");
-            Trace.WriteLine($"[Danmaku] RoomId={danmakuArgs.RoomId}");
-            Trace.WriteLine($"[Danmaku] WebRid={danmakuArgs.WebRid}");
-            Trace.WriteLine($"[Danmaku] UserId={danmakuArgs.UserId}");
-            Trace.WriteLine($"[Danmaku] Cookie={danmakuArgs.Cookie?.Substring(0, Math.Min(80, danmakuArgs.Cookie?.Length ?? 0))}...");
-            Trace.WriteLine($"[Danmaku] isStopping(before)={isStopping}");
-            Trace.WriteLine($"[Danmaku] reconnectAttempts(before)={reconnectAttempts}");
-            Trace.WriteLine($"[Danmaku] ws==null(before)={ws == null}");
-            
-            isStopping = false;
-            reconnectAttempts = 0;
-            useBackupEndpoint = false;
-            CancelReconnect();
-            Trace.WriteLine($"[Danmaku] State reset: isStopping={isStopping}, reconnectAttempts={reconnectAttempts}");
-            
+            var suppliedArgs = args as DouyinDanmakuArgs ?? throw new ArgumentException("args must be DouyinDanmakuArgs", nameof(args));
+            var startArgs = new DouyinDanmakuArgs
+            {
+                WebRid = suppliedArgs.WebRid,
+                RoomId = suppliedArgs.RoomId,
+                UserId = suppliedArgs.UserId,
+                Cookie = suppliedArgs.Cookie
+            };
+            long session;
+            lock (stateLock)
+            {
+                session = ++sessionGeneration;
+                danmakuArgs = startArgs;
+                isStopping = false;
+                reconnectAttempts = 0;
+                useBackupEndpoint = false;
+                ServerUrl = null;
+                BackupUrl = null;
+                CancelReconnect();
+            }
+
+            await _connectionSemaphore.WaitAsync();
+            try
+            {
+                lock (stateLock)
+                {
+                    if (!IsCurrentSession(session)) return;
+                }
+                CleanupWebSocket();
+            }
+            finally
+            {
+                _connectionSemaphore.Release();
+            }
+
             var ts = Utils.GetTimestampMs();
             var query = new Dictionary<string, string>()
             {
@@ -93,7 +114,7 @@ namespace AllLive.Core.Danmaku
                 { "endpoint", "live_pc" },
                 { "support_wrds", "1" },
                 { "im_path", "/webcast/im/fetch/" },
-                { "user_unique_id", danmakuArgs.UserId },
+                { "user_unique_id", startArgs.UserId },
                 { "device_platform", "web" },
                 { "cookie_enabled", "true" },
                 { "screen_width", "1920" },
@@ -105,33 +126,65 @@ namespace AllLive.Core.Danmaku
                 { "browser_online", "true" },
                 { "tz_name", "Asia/Shanghai" },
                 { "identity", "audience" },
-                { "room_id", danmakuArgs.RoomId },
+                { "room_id", startArgs.RoomId },
                 { "heartbeatDuration", "0" },
             };
 
-            var sign = await signatureProvider(danmakuArgs.RoomId, danmakuArgs.UserId);
+            var sign = await signatureProvider(startArgs.RoomId, startArgs.UserId);
             Trace.WriteLine($"[Danmaku] Signature: {sign}");
             query.Add("signature", sign);
 
             var url = $"{baseUrl}?{Utils.BuildQueryString(query)}";
-            ServerUrl = url;
-            BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
+            lock (stateLock)
+            {
+                // Signing can finish after Stop or a newer Start has invalidated this session.
+                if (!IsCurrentSession(session)) return;
+                ServerUrl = url;
+                BackupUrl = url.Replace("webcast3-ws-web-lq", "webcast5-ws-web-lf");
+            }
             Trace.WriteLine($"[Danmaku] WebSocket URL: {url.Substring(0, Math.Min(150, url.Length))}...");
             Trace.WriteLine($"[Danmaku] Connecting WebSocket...");
-            await ConnectAsync(useBackup: false);
+            await ConnectAsync(session, useBackup: false).ConfigureAwait(false);
+        }
+
+        private bool IsCurrentSession(long session)
+        {
+            return !isStopping && sessionGeneration == session;
+        }
+
+        private bool IsCurrentSocket(WebSocket socket, long session)
+        {
+            return socket != null && IsCurrentSession(session) &&
+                socketGeneration == session && ReferenceEquals(ws, socket);
+        }
+
+        private bool TryGetCurrentSocket(object sender, out WebSocket socket, out long session)
+        {
+            lock (stateLock)
+            {
+                socket = sender as WebSocket;
+                session = socketGeneration;
+                return IsCurrentSocket(socket, session);
+            }
         }
 
         private async void Ws_OnOpen(object sender, EventArgs e)
         {
             try
             {
-                Trace.WriteLine($"[DouyinDanmaku.Ws_OnOpen] WebSocket connected!");
-                reconnectAttempts = 0;
-                useBackupEndpoint = false;
-                CancelReconnect();
-                await SendHeartBeatDataAsync().ConfigureAwait(false);
-                timer?.Start();
-                Trace.WriteLine($"[DouyinDanmaku.Ws_OnOpen] Heartbeat timer started");
+                if (!TryGetCurrentSocket(sender, out var socket, out var session)) return;
+                lock (stateLock)
+                {
+                    if (!IsCurrentSocket(socket, session)) return;
+                    reconnectAttempts = 0;
+                    useBackupEndpoint = false;
+                    CancelReconnect();
+                }
+                await SendHeartBeatDataAsync(socket, session).ConfigureAwait(false);
+                lock (stateLock)
+                {
+                    if (IsCurrentSocket(socket, session)) timer?.Start();
+                }
             }
             catch (Exception ex)
             {
@@ -143,26 +196,34 @@ namespace AllLive.Core.Danmaku
         {
             try
             {
-                reconnectAttempts = 0;
-                var message = e.RawData;
-                var wssPackage = DeserializeProto<PushFrame>(message);
+                if (!TryGetCurrentSocket(sender, out var socket, out var session)) return;
+                lock (stateLock)
+                {
+                    if (!IsCurrentSocket(socket, session)) return;
+                    reconnectAttempts = 0;
+                }
+                var wssPackage = DeserializeProto<PushFrame>(e.RawData);
                 var logId = wssPackage.logId;
                 var decompressed = GzipDecompress(wssPackage.Payload);
                 var payloadPackage = DeserializeProto<Response>(decompressed);
                 if (payloadPackage.needAck ?? false)
                 {
-                    await SendACKDataAsync(logId ?? 0, payloadPackage.internalExt).ConfigureAwait(false);
+                    await SendACKDataAsync(socket, session, logId ?? 0, payloadPackage.internalExt).ConfigureAwait(false);
                 }
 
                 foreach (var msg in payloadPackage.messagesLists)
                 {
+                    lock (stateLock)
+                    {
+                        if (!IsCurrentSocket(socket, session)) return;
+                    }
                     if (msg.Method == "WebcastChatMessage")
                     {
-                        UnPackWebcastChatMessage(msg.Payload);
+                        UnPackWebcastChatMessage(msg.Payload, socket, session);
                     }
                     else if (msg.Method == "WebcastRoomUserSeqMessage")
                     {
-                        UnPackWebcastRoomUserSeqMessage(msg.Payload);
+                        UnPackWebcastRoomUserSeqMessage(msg.Payload, socket, session);
                     }
                 }
             }
@@ -172,12 +233,20 @@ namespace AllLive.Core.Danmaku
             }
         }
 
-        private void UnPackWebcastChatMessage(byte[] payload)
+        private void PublishMessage(WebSocket socket, long session, LiveMessage message)
+        {
+            lock (stateLock)
+            {
+                if (IsCurrentSocket(socket, session)) NewMessage?.Invoke(this, message);
+            }
+        }
+
+        private void UnPackWebcastChatMessage(byte[] payload, WebSocket socket, long session)
         {
             try
             {
                 var chatMessage = DeserializeProto<ChatMessage>(payload);
-                NewMessage?.Invoke(this, new LiveMessage()
+                PublishMessage(socket, session, new LiveMessage()
                 {
                     Type = LiveMessageType.Chat,
                     Color = DanmakuColor.White,
@@ -191,12 +260,12 @@ namespace AllLive.Core.Danmaku
             }
         }
 
-        void UnPackWebcastRoomUserSeqMessage(byte[] payload)
+        private void UnPackWebcastRoomUserSeqMessage(byte[] payload, WebSocket socket, long session)
         {
             try
             {
                 var roomUserSeqMessage = DeserializeProto<RoomUserSeqMessage>(payload);
-                NewMessage?.Invoke(this, new LiveMessage()
+                PublishMessage(socket, session, new LiveMessage()
                 {
                     Type = LiveMessageType.Online,
                     Data = roomUserSeqMessage.totalUser,
@@ -215,13 +284,10 @@ namespace AllLive.Core.Danmaku
         {
             try
             {
-                Trace.WriteLine($"[DouyinDanmaku.Ws_OnClose] WebSocket closed: Code={e.Code}, Reason={e.Reason}");
-                if (isStopping)
+                if (TryGetCurrentSocket(sender, out var socket, out var session))
                 {
-                    Trace.WriteLine($"[DouyinDanmaku.Ws_OnClose] Stopping, ignore close event");
-                    return;
+                    HandleConnectionFailure(session, string.IsNullOrEmpty(e.Reason) ? "Danmaku server closed" : e.Reason, socket);
                 }
-                HandleConnectionFailure(string.IsNullOrEmpty(e.Reason) ? "Danmaku server closed" : e.Reason);
             }
             catch (Exception ex)
             {
@@ -233,13 +299,10 @@ namespace AllLive.Core.Danmaku
         {
             try
             {
-                Trace.WriteLine($"[DouyinDanmaku.Ws_OnError] WebSocket error: {e.Message}");
-                if (isStopping)
+                if (TryGetCurrentSocket(sender, out var socket, out var session))
                 {
-                    Trace.WriteLine($"[DouyinDanmaku.Ws_OnError] Stopping, ignore error event");
-                    return;
+                    HandleConnectionFailure(session, e.Message, socket);
                 }
-                HandleConnectionFailure(e.Message);
             }
             catch (Exception ex)
             {
@@ -249,14 +312,61 @@ namespace AllLive.Core.Danmaku
 
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            Heartbeat();
+            WebSocket socket;
+            long session;
+            lock (stateLock)
+            {
+                if (!ReferenceEquals(sender, timer)) return;
+                socket = ws;
+                session = socketGeneration;
+            }
+            _ = SendHeartBeatDataAsync(socket, session);
         }
 
         public void Heartbeat()
         {
+            WebSocket socket;
+            long session;
+            lock (stateLock)
+            {
+                socket = ws;
+                session = socketGeneration;
+            }
+            _ = SendHeartBeatDataAsync(socket, session);
+        }
+
+        public async Task Stop()
+        {
+            long stoppedSession;
+            lock (stateLock)
+            {
+                stoppedSession = ++sessionGeneration;
+                isStopping = true;
+                reconnectAttempts = 0;
+                useBackupEndpoint = false;
+                CancelReconnect();
+            }
+            await _connectionSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                _ = SendHeartBeatDataAsync();
+                lock (stateLock)
+                {
+                    // A newer Start owns cleanup if it overtook this Stop while waiting.
+                    if (sessionGeneration != stoppedSession) return;
+                }
+                CleanupWebSocket();
+            }
+            finally
+            {
+                _connectionSemaphore.Release();
+            }
+        }
+
+        private async Task SendHeartBeatDataAsync(WebSocket socket, long session)
+        {
+            try
+            {
+                await SendDataAsync(socket, session, new PushFrame { payloadType = "hb" }).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -264,58 +374,27 @@ namespace AllLive.Core.Danmaku
             }
         }
 
-        public async Task Stop()
+        private async Task SendACKDataAsync(WebSocket socket, long session, ulong logId, string internalExt)
         {
-            Trace.WriteLine($"========== DouyinDanmaku.Stop ==========");
-            Trace.WriteLine($"[DouyinDanmaku.Stop] Setting isStopping=true");
-            isStopping = true;
-            CancelReconnect();
-            await _connectionSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                Trace.WriteLine($"[DouyinDanmaku.Stop] Cleaning WebSocket...");
-                reconnectAttempts = 0;
-                useBackupEndpoint = false;
-                CleanupWebSocket();
-                Trace.WriteLine($"[DouyinDanmaku.Stop] WebSocket cleaned");
-            }
-            finally
-            {
-                _connectionSemaphore.Release();
-            }
-            Trace.WriteLine($"========== DouyinDanmaku.Stop Done ==========");
-        }
-
-        private async Task SendHeartBeatDataAsync()
-        {
-            var obj = new PushFrame();
-            obj.payloadType = "hb";
-            await _connectionSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                ws?.Send(SerializeProto(obj));
-            }
-            finally
-            {
-                _connectionSemaphore.Release();
-            }
-        }
-
-        private async Task SendACKDataAsync(ulong logId, string internalExt)
-        {
-            if (string.IsNullOrEmpty(internalExt))
-            {
-                return;
-            }
-            var obj = new PushFrame
+            if (string.IsNullOrEmpty(internalExt)) return;
+            await SendDataAsync(socket, session, new PushFrame
             {
                 logId = logId,
                 payloadType = internalExt
-            };
+            }).ConfigureAwait(false);
+        }
+
+        private async Task SendDataAsync(WebSocket socket, long session, PushFrame frame)
+        {
             await _connectionSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                ws?.Send(SerializeProto(obj));
+                lock (stateLock)
+                {
+                    if (!IsCurrentSocket(socket, session)) return;
+                }
+                // Never resolve ws again after an await: it may belong to a newer session.
+                socket.Send(SerializeProto(frame));
             }
             finally
             {
@@ -384,52 +463,50 @@ namespace AllLive.Core.Danmaku
             return fallback;
         }
 
-        private async Task ConnectAsync(bool useBackup)
+        private async Task ConnectAsync(long session, bool useBackup, CancellationTokenSource reconnect = null)
         {
-            var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
-            Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] useBackup={useBackup}");
-            Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] Target URL: {targetUrl?.Substring(0, Math.Min(100, targetUrl?.Length ?? 0))}...");
-
             await _connectionSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] Acquired semaphore");
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] Cleaning old connection...");
+                lock (stateLock)
+                {
+                    if (!IsCurrentSession(session) ||
+                        (reconnect != null && !ReferenceEquals(reconnectTokenSource, reconnect))) return;
+                }
                 CleanupWebSocket();
 
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] Creating new WebSocket...");
-                ws = new WebSocket(targetUrl);
-                ws.CustomHeaders = new Dictionary<string, string>()
+                WebSocket socket;
+                lock (stateLock)
                 {
-                    {"Origin","https://live.douyin.com" },
-                    {"Cookie", danmakuArgs.Cookie},
-                    {"User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0" }
-                };
-                ws.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12;
-
-                ws.OnOpen += Ws_OnOpen;
-                ws.OnError += Ws_OnError;
-                ws.OnMessage += Ws_OnMessage;
-                ws.OnClose += Ws_OnClose;
-
-                timer?.Stop();
-                timer?.Dispose();
-                timer = new System.Timers.Timer(HeartbeatTime)
-                {
-                    AutoReset = true
-                };
-                timer.Elapsed += Timer_Elapsed;
-
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] Calling ws.Connect()...");
-                ws.Connect();
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] ws.Connect() returned, ws.ReadyState={ws.ReadyState}");
+                    if (!IsCurrentSession(session) ||
+                        (reconnect != null && !ReferenceEquals(reconnectTokenSource, reconnect))) return;
+                    // The delayed task is now running. A failure must be free to schedule the next retry.
+                    if (reconnect != null) reconnectTokenSource = null;
+                    var targetUrl = useBackup && !string.IsNullOrEmpty(BackupUrl) ? BackupUrl : ServerUrl;
+                    socket = new WebSocket(targetUrl);
+                    WebSocketSecurity.Configure(socket);
+                    socket.CustomHeaders = new Dictionary<string, string>()
+                    {
+                        {"Origin", "https://live.douyin.com"},
+                        {"Cookie", danmakuArgs.Cookie},
+                        {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"}
+                    };
+                    ws = socket;
+                    socketGeneration = session;
+                    socket.OnOpen += Ws_OnOpen;
+                    socket.OnError += Ws_OnError;
+                    socket.OnMessage += Ws_OnMessage;
+                    socket.OnClose += Ws_OnClose;
+                    timer = new System.Timers.Timer(HeartbeatTime) { AutoReset = true };
+                    timer.Elapsed += Timer_Elapsed;
+                }
+                socket.Connect();
             }
             catch (Exception ex)
             {
                 Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] exception: {ex.Message}");
-                Trace.WriteLine($"[DouyinDanmaku.ConnectAsync] StackTrace: {ex.StackTrace}");
                 CleanupWebSocket();
-                HandleConnectionFailure(ex.Message);
+                HandleConnectionFailure(session, ex.Message);
             }
             finally
             {
@@ -439,93 +516,94 @@ namespace AllLive.Core.Danmaku
 
         private void CleanupWebSocket()
         {
-            Trace.WriteLine($"[DouyinDanmaku.CleanupWebSocket] ws==null={ws == null}, timer==null={timer == null}");
-            if (ws != null)
+            WebSocket socket;
+            System.Timers.Timer heartbeatTimer;
+            lock (stateLock)
             {
-                ws.OnOpen -= Ws_OnOpen;
-                ws.OnError -= Ws_OnError;
-                ws.OnMessage -= Ws_OnMessage;
-                ws.OnClose -= Ws_OnClose;
+                socket = ws;
+                ws = null;
+                socketGeneration = 0;
+                heartbeatTimer = timer;
+                timer = null;
+            }
+            if (socket != null)
+            {
+                socket.OnOpen -= Ws_OnOpen;
+                socket.OnError -= Ws_OnError;
+                socket.OnMessage -= Ws_OnMessage;
+                socket.OnClose -= Ws_OnClose;
                 try
                 {
-                    Trace.WriteLine($"[DouyinDanmaku.CleanupWebSocket] Closing WebSocket, ReadyState={ws.ReadyState}");
-                    ws.Close();
+                    socket.Close();
                 }
                 catch (Exception ex)
                 {
                     Trace.WriteLine($"[DouyinDanmaku.CleanupWebSocket] Close exception (ignored): {ex.Message}");
                 }
-                ws = null;
             }
-
-            if (timer != null)
+            if (heartbeatTimer != null)
             {
-                timer.Elapsed -= Timer_Elapsed;
-                timer.Stop();
-                timer.Dispose();
-                timer = null;
-                Trace.WriteLine($"[DouyinDanmaku.CleanupWebSocket] Timer cleaned");
+                heartbeatTimer.Elapsed -= Timer_Elapsed;
+                heartbeatTimer.Stop();
+                heartbeatTimer.Dispose();
             }
         }
 
-        private void HandleConnectionFailure(string reason)
+        private void HandleConnectionFailure(long session, string reason, WebSocket socket = null)
         {
-            Trace.WriteLine($"[DouyinDanmaku.HandleConnectionFailure] reason={reason}");
-            
-            if (reconnectTokenSource != null)
+            lock (stateLock)
             {
-                Trace.WriteLine($"[DouyinDanmaku.HandleConnectionFailure] Reconnect already in progress, skip");
-                return;
-            }
+                if (!IsCurrentSession(session) || (socket != null && !IsCurrentSocket(socket, session))) return;
+                if (reconnectTokenSource != null) return;
+                timer?.Stop();
+                if (reconnectAttempts >= MaxReconnectAttempts)
+                {
+                    isStopping = true;
+                    OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "Reconnect failed" : reason);
+                    return;
+                }
 
-            reconnectAttempts++;
-            Trace.WriteLine($"[DouyinDanmaku.HandleConnectionFailure] Reconnect attempt: {reconnectAttempts}/{MaxReconnectAttempts}");
-            
-            if (reconnectAttempts > MaxReconnectAttempts)
-            {
-                Trace.WriteLine($"[DouyinDanmaku.HandleConnectionFailure] Max reconnect attempts reached");
-                CancelReconnect();
-                OnClose?.Invoke(this, string.IsNullOrEmpty(reason) ? "Reconnect failed" : reason);
-                return;
+                reconnectAttempts++;
+                useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
+                ScheduleReconnect(session, useBackupEndpoint);
+                OnClose?.Invoke(this, $"Connection lost, reconnecting ({reconnectAttempts}/{MaxReconnectAttempts})");
             }
-
-            OnClose?.Invoke(this, $"Connection lost, reconnecting ({reconnectAttempts}/{MaxReconnectAttempts})");
-            useBackupEndpoint = !useBackupEndpoint && !string.IsNullOrEmpty(BackupUrl);
-            Trace.WriteLine($"[DouyinDanmaku.HandleConnectionFailure] Use backup endpoint: {useBackupEndpoint}");
-            ScheduleReconnect();
         }
 
-        private void ScheduleReconnect()
+        private void ScheduleReconnect(long session, bool useBackup)
         {
-            CancelReconnect();
-            reconnectTokenSource = new CancellationTokenSource();
-            var token = reconnectTokenSource.Token;
-
+            var source = new CancellationTokenSource();
+            reconnectTokenSource = source;
+            var token = source.Token;
+            // Do not pass token to Task.Run: even cancellation before scheduling must run finally.
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(5), token);
-                    if (!token.IsCancellationRequested)
-                    {
-                        await ConnectAsync(useBackupEndpoint);
-                    }
+                    await Task.Delay(TimeSpan.FromSeconds(5), token).ConfigureAwait(false);
+                    await ConnectAsync(session, useBackup, source).ConfigureAwait(false);
                 }
-                catch (TaskCanceledException)
+                catch (OperationCanceledException)
                 {
-                    // ignored
+                    // Stop or a newer session canceled this delayed retry.
                 }
-            }, token);
+                finally
+                {
+                    lock (stateLock)
+                    {
+                        if (ReferenceEquals(reconnectTokenSource, source)) reconnectTokenSource = null;
+                    }
+                    source.Dispose();
+                }
+            });
         }
 
+        // Call only while holding stateLock; the scheduled task owns disposal.
         private void CancelReconnect()
         {
-            if (reconnectTokenSource != null)
-            {
-                reconnectTokenSource.Cancel();
-                reconnectTokenSource.Dispose();
-                reconnectTokenSource = null;
-            }
+            var source = reconnectTokenSource;
+            reconnectTokenSource = null;
+            source?.Cancel();
         }
 
         private async Task<string> GetSign(string roomId, string uniqueId)

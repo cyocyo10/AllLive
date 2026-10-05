@@ -25,8 +25,12 @@ namespace AllLive.UWP.ViewModels
         public event EventHandler<LiveMessage> AddDanmaku;
 
         // 弹幕消息队列和批量处理
-        private readonly ConcurrentQueue<LiveMessage> _messageQueue = new ConcurrentQueue<LiveMessage>();
+        private readonly ConcurrentQueue<KeyValuePair<int, LiveMessage>> _messageQueue = new ConcurrentQueue<KeyValuePair<int, LiveMessage>>();
         private Timer _messageProcessTimer;
+        private volatile bool _isStopped;
+        private int _loadGeneration;
+        private int _playUrlGeneration;
+        private Task _danmakuStopTask = Task.CompletedTask;
         private const int MESSAGE_BATCH_INTERVAL = 100; // 100ms 处理一批
         private const int MESSAGE_BATCH_SIZE = 10; // 每批最多处理10条
 
@@ -40,10 +44,33 @@ namespace AllLive.UWP.ViewModels
             AddFavoriteCommand = new RelayCommand(AddFavorite);
             RemoveFavoriteCommand = new RelayCommand(RemoveFavorite);
 
-            // 初始化消息批量处理定时器
+            EnsureMessageTimer();
+        }
+
+        private void EnsureMessageTimer()
+        {
+            if (_messageProcessTimer != null) return;
             _messageProcessTimer = new Timer(MESSAGE_BATCH_INTERVAL);
             _messageProcessTimer.Elapsed += ProcessMessageQueue;
             _messageProcessTimer.AutoReset = true;
+        }
+
+        private bool IsCurrentLoad(int generation)
+        {
+            return !_isStopped && generation == System.Threading.Volatile.Read(ref _loadGeneration);
+        }
+
+        private Task StopDanmaku()
+        {
+            var previous = LiveDanmaku;
+            LiveDanmaku = null;
+            if (previous != null)
+            {
+                previous.NewMessage -= LiveDanmaku_NewMessage;
+                previous.OnClose -= LiveDanmaku_OnClose;
+                _danmakuStopTask = previous.Stop();
+            }
+            return _danmakuStopTask;
         }
         public ICommand AddFavoriteCommand { get; set; }
         public ICommand RemoveFavoriteCommand { get; set; }
@@ -236,14 +263,26 @@ namespace AllLive.UWP.ViewModels
 
         public async void LoadData(ILiveSite site, object roomId)
         {
+            var generation = System.Threading.Interlocked.Increment(ref _loadGeneration);
+            System.Threading.Interlocked.Increment(ref _playUrlGeneration);
+            _isStopped = false;
             try
             {
                 LogHelper.Log("[LiveRoomVM.LoadData] 开始加载房间数据", LogType.DEBUG);
                 Loading = true;
+                var previousStop = StopDanmaku();
+                while (_messageQueue.TryDequeue(out _)) { }
+                await previousStop;
+                if (!IsCurrentLoad(generation)) return;
                 Site = site;
+                // Settings are loaded before the room on initial navigation. Rebind the
+                // SC timer to this load, and recreate it after Stop/reload as needed.
+                SetSCTimer();
+                currentQuality = null;
 
                 RoomId = roomId;
-                var result = await Site.GetRoomDetail(roomId);
+                var result = await site.GetRoomDetail(roomId);
+                if (!IsCurrentLoad(generation)) return;
                 detail = result;
                 RoomID = result.RoomID;
 
@@ -274,14 +313,17 @@ namespace AllLive.UWP.ViewModels
 
                 LiveDanmaku.NewMessage += LiveDanmaku_NewMessage;
                 LiveDanmaku.OnClose += LiveDanmaku_OnClose;
-                if (_messageProcessTimer != null && !_messageProcessTimer.Enabled)
+                EnsureMessageTimer();
+                if (!_messageProcessTimer.Enabled)
                 {
                     _messageProcessTimer.Start();
                 }
                 await LiveDanmaku.Start(result.DanmakuData);
-                if (detail.Status)
+                if (!IsCurrentLoad(generation)) return;
+                if (result.Status)
                 {
-                    var qualities = await Site.GetPlayQuality(result);
+                    var qualities = await site.GetPlayQuality(result);
+                    if (!IsCurrentLoad(generation)) return;
                     if (Site.Name == "虎牙直播")
                     {
                         //HDR无法播放
@@ -306,22 +348,24 @@ namespace AllLive.UWP.ViewModels
             }
             catch (Exception ex)
             {
-                HandleError(ex);
+                if (IsCurrentLoad(generation)) HandleError(ex);
             }
             finally
             {
-                Loading = false;
+                if (IsCurrentLoad(generation)) Loading = false;
             }
         }
 
         Timer scTimer;
         public void SetSCTimer()
         {
+            var generation = _loadGeneration;
             KeepSC = SettingHelper.GetValue<bool>(SettingHelper.LiveDanmaku.KEEP_SUPER_CHAT, true);
             if (KeepSC)
             {
                 _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                  {
+                     if (!IsCurrentLoad(generation)) return;
                      foreach (var item in SuperChatMessages)
                      {
                          item.ShowCountdown = false;
@@ -335,6 +379,7 @@ namespace AllLive.UWP.ViewModels
             {
                 _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
+                    if (!IsCurrentLoad(generation)) return;
                     foreach (var item in SuperChatMessages)
                     {
                         item.ShowCountdown = true;
@@ -343,11 +388,13 @@ namespace AllLive.UWP.ViewModels
                 });
                 scTimer?.Stop();
                 scTimer?.Dispose();
-                scTimer = new Timer(1000);
-                scTimer.Elapsed += (s, e) =>
+                var countdownTimer = new Timer(1000);
+                scTimer = countdownTimer;
+                countdownTimer.Elapsed += (s, e) =>
                 {
                     _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
+                        if (!IsCurrentLoad(generation) || !ReferenceEquals(countdownTimer, scTimer)) return;
                         for (var i = SuperChatMessages.Count - 1; i >= 0; i--)
                         {
                             var item = SuperChatMessages[i];
@@ -414,6 +461,12 @@ namespace AllLive.UWP.ViewModels
 
         public async void LoadPlayUrl()
         {
+            var generation = _loadGeneration;
+            var request = System.Threading.Interlocked.Increment(ref _playUrlGeneration);
+            var site = Site;
+            var room = detail;
+            var quality = CurrentQuality;
+            if (!IsCurrentLoad(generation) || site == null || room == null || quality == null) return;
             try
             {
                 // 断流重连时尽量保持原线路索引（对齐 pure_live changeLine / refresh）
@@ -424,8 +477,9 @@ namespace AllLive.UWP.ViewModels
                     if (idx >= 0) preferIndex = idx;
                 }
 
-                var data = await Site.GetPlayUrls(detail, CurrentQuality);
-                if (data.Count == 0)
+                var data = await site.GetPlayUrls(room, quality);
+                if (!IsCurrentLoad(generation) || request != _playUrlGeneration) return;
+                if (data == null || data.Count == 0)
                 {
                     Utils.ShowMessageToast("加载播放地址失败");
                     return;
@@ -448,6 +502,7 @@ namespace AllLive.UWP.ViewModels
             }
             catch (Exception ex)
             {
+                if (!IsCurrentLoad(generation) || request != _playUrlGeneration) return;
                 LogHelper.Log("[LiveRoomVM.LoadPlayUrl] 加载播放地址失败", LogType.ERROR, ex);
                 Utils.ShowMessageToast("加载播放地址失败");
             }
@@ -459,9 +514,14 @@ namespace AllLive.UWP.ViewModels
 
         public async void LoadSuperChat()
         {
+            var generation = _loadGeneration;
+            var site = Site;
+            var roomId = RoomID;
+            if (!IsCurrentLoad(generation) || site == null) return;
             try
             {
-                var data = await Site.GetSuperChatMessages(RoomID);
+                var data = await site.GetSuperChatMessages(roomId);
+                if (!IsCurrentLoad(generation)) return;
                 if (data.Count > 0)
                 {
                     foreach (var item in data)
@@ -472,6 +532,7 @@ namespace AllLive.UWP.ViewModels
             }
             catch (Exception ex)
             {
+                if (!IsCurrentLoad(generation)) return;
                 LogHelper.Log("加载SC失败", LogType.ERROR, ex);
                 Utils.ShowMessageToast("加载SC失败");
             }
@@ -479,9 +540,11 @@ namespace AllLive.UWP.ViewModels
         }
         private async void LiveDanmaku_OnClose(object sender, string e)
         {
-
+            var generation = _loadGeneration;
+            if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, LiveDanmaku)) return;
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, LiveDanmaku)) return;
                 Messages.Add(new LiveMessage()
                 {
                     Type = LiveMessageType.Chat,
@@ -494,18 +557,22 @@ namespace AllLive.UWP.ViewModels
 
         private void ProcessMessageQueue(object sender, ElapsedEventArgs e)
         {
-            if (_messageQueue.IsEmpty) return;
+            var generation = _loadGeneration;
+            if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, _messageProcessTimer) || _messageQueue.IsEmpty) return;
 
             var messagesToProcess = new List<LiveMessage>();
             for (int i = 0; i < MESSAGE_BATCH_SIZE && _messageQueue.TryDequeue(out var msg); i++)
             {
-                messagesToProcess.Add(msg);
+                // A callback can finish filtering after Stop cleared the queue.
+                // Stamp each item at reception so such late enqueues stay stale.
+                if (msg.Key == generation) messagesToProcess.Add(msg.Value);
             }
 
             if (messagesToProcess.Count == 0) return;
 
             _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                if (!IsCurrentLoad(generation)) return;
                 foreach (var msg in messagesToProcess)
                 {
                     // 清理旧消息
@@ -526,11 +593,14 @@ namespace AllLive.UWP.ViewModels
 
         private void LiveDanmaku_NewMessage(object sender, LiveMessage e)
         {
+            var generation = _loadGeneration;
+            if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, LiveDanmaku)) return;
             // Online 和 SuperChat 立即处理
             if (e.Type == LiveMessageType.Online)
             {
                 _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
+                    if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, LiveDanmaku)) return;
                     Online = Convert.ToInt64(e.Data);
                 });
                 return;
@@ -540,6 +610,7 @@ namespace AllLive.UWP.ViewModels
             {
                 _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
+                    if (!IsCurrentLoad(generation) || !ReferenceEquals(sender, LiveDanmaku)) return;
                     SuperChatMessages.Insert(0, new SuperChatItem(e.Data as LiveSuperChatMessage, KeepSC ? false : true));
                 });
                 return;
@@ -554,30 +625,39 @@ namespace AllLive.UWP.ViewModels
                 }
 
                 // 普通弹幕加入队列批量处理
-                _messageQueue.Enqueue(e);
+                _messageQueue.Enqueue(new KeyValuePair<int, LiveMessage>(generation, e));
                 return;
             }
         }
 
         public async void Stop()
         {
-            _messageProcessTimer?.Stop();
-            _messageProcessTimer?.Dispose();
+            _isStopped = true;
+            System.Threading.Interlocked.Increment(ref _loadGeneration);
+            System.Threading.Interlocked.Increment(ref _playUrlGeneration);
+            Loading = false;
+            if (_messageProcessTimer != null)
+            {
+                _messageProcessTimer.Elapsed -= ProcessMessageQueue;
+                _messageProcessTimer.Stop();
+                _messageProcessTimer.Dispose();
+                _messageProcessTimer = null;
+            }
             scTimer?.Stop();
             scTimer?.Dispose();
             scTimer = null;
-            // 清空消息队列
             while (_messageQueue.TryDequeue(out _)) { }
             Messages.Clear();
-            if (LiveDanmaku != null)
+            try
             {
-                LiveDanmaku.NewMessage -= LiveDanmaku_NewMessage;
-                LiveDanmaku.OnClose -= LiveDanmaku_OnClose;
-                await LiveDanmaku.Stop();
-                LiveDanmaku = null;
+                await StopDanmaku();
             }
-
+            catch (Exception ex)
+            {
+                LogHelper.Log("停止弹幕失败", LogType.ERROR, ex);
+            }
         }
+
     }
 
     public class PlayurlLine
