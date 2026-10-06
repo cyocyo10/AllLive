@@ -74,3 +74,7 @@
 [爱发电](https://afdian.net/a/xiaoyaocz)
 
 [应用商店购买](https://apps.microsoft.com/detail/9n1twg2g84vd)
+
+## 维护记录
+
+- [提交历史勘误](docs/COMMIT_HISTORY_ERRATA.zh-CN.md)：保留原提交编号，逐条说明历史提交描述与当时改动的差异。
