@@ -1,0 +1,110 @@
+name: Login and unsigned UWP validation
+
+on:
+  push:
+    branches: ['dev/**']
+    paths:
+      - 'AllLive.UWP/**'
+      - 'AllLive.Core/**'
+      - 'tests/LoginRegression/**'
+      - '.github/workflows/login-validation.yml'
+      - 'global.json'
+      - 'AllLive.sln'
+  pull_request:
+    branches: ['dev/**']
+    paths:
+      - 'AllLive.UWP/**'
+      - 'AllLive.Core/**'
+      - 'tests/LoginRegression/**'
+      - '.github/workflows/login-validation.yml'
+      - 'global.json'
+      - 'AllLive.sln'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  login-regression:
+    if: startsWith(github.ref, 'refs/heads/dev/') || startsWith(github.head_ref, 'dev/') || startsWith(github.base_ref, 'dev/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile production login code and run offline state regressions
+        run: bash tests/LoginRegression/run.sh
+      - name: Upload offline results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-regression-results
+          path: tests/LoginRegression/results/*.json
+          if-no-files-found: warn
+
+  unsigned-uwp-build:
+    if: startsWith(github.ref, 'refs/heads/dev/') || startsWith(github.head_ref, 'dev/') || startsWith(github.base_ref, 'dev/')
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.306'
+      - uses: microsoft/setup-msbuild@v2
+      - uses: NuGet/setup-nuget@v2
+      - name: Restore UWP solution
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          nuget restore AllLive.sln -NonInteractive 2>&1 | Tee-Object artifacts/restore.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build Core with the existing UWP configuration
+        shell: pwsh
+        run: |
+          msbuild AllLive.Core/AllLive.Core.csproj /t:Build /p:Configuration=Release '/p:Platform=Any CPU' /verbosity:minimal 2>&1 | Tee-Object artifacts/core-build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Compile and validate UWP XAML without signing or packaging
+        shell: pwsh
+        run: |
+          # No certificate decoding, signing secret, manifest mutation or package upload.
+          $arguments = @(
+            'AllLive.UWP/AllLive.UWP.csproj', '/t:Build',
+            '/p:Configuration=Release', '/p:Platform=x64',
+            '/p:AppxPackageSigningEnabled=false',
+            '/p:PackageCertificateKeyFile=', '/p:PackageCertificateThumbprint=',
+            '/p:GenerateTemporaryStoreCertificate=false',
+            '/p:GenerateAppxPackageOnBuild=false',
+            '/p:GenerateAppInstallerFile=false', '/p:GenerateTestArtifacts=false',
+            '/p:AppxAutoIncrementPackageRevision=false', '/p:AppxBundle=Never',
+            '/verbosity:minimal'
+          )
+          & msbuild @arguments 2>&1 | Tee-Object artifacts/uwp-build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload build logs only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-uwp-validation-logs
+          path: artifacts/*.log
+          if-no-files-found: warn
+      - name: Retain unsigned compile output for inspection
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-uwp-x64-compile-output
+          path: |
+            AllLive.UWP/bin/x64/Release/**/*.exe
+            AllLive.UWP/bin/x64/Release/**/*.dll
+            AllLive.UWP/bin/x64/Release/**/*.pri
+            AllLive.UWP/bin/x64/Release/**/*.xbf
+            AllLive.UWP/bin/x64/Release/**/*.pdb
+            AllLive.UWP/bin/x64/Release/**/AppxManifest.xml
+          if-no-files-found: error
+          retention-days: 14

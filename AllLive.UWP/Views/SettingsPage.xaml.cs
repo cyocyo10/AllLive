@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -29,6 +30,9 @@ namespace AllLive.UWP.Views
     public sealed partial class SettingsPage : Page
     {
         readonly SettingVM settingVM;
+        private bool pageLoaded;
+        private bool accountBusy;
+        private Action cancelLogin;
         public SettingsPage()
         {
             settingVM = new SettingVM();
@@ -42,7 +46,7 @@ namespace AllLive.UWP.Views
                 SettingsXboxMode.Visibility = Visibility.Visible;
                 SettingsNewWindow.Visibility = Visibility.Collapsed;
             }
-            BiliAccount.Instance.OnAccountChanged += BiliAccount_OnAccountChanged; 
+            Loaded += SettingsPage_Loaded;
             LoadUI();
             
             // 页面卸载时取消事件订阅
@@ -51,24 +55,46 @@ namespace AllLive.UWP.Views
 
         private void SettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
-            BiliAccount.Instance.OnAccountChanged -= BiliAccount_OnAccountChanged;
-            this.Unloaded -= SettingsPage_Unloaded;
+            BiliAccount.Instance.OnAccountChanged -= Account_OnAccountChanged;
+            DouyuAccount.Instance.OnAccountChanged -= Account_OnAccountChanged;
+            DouyinAccount.Instance.OnAccountChanged -= Account_OnAccountChanged;
+            pageLoaded = false;
+            cancelLogin?.Invoke();
+            cancelLogin = null;
         }
 
-        private void BiliAccount_OnAccountChanged(object sender, EventArgs e)
+        private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
-            if (BiliAccount.Instance.Logined)
+            if (pageLoaded) return;
+            pageLoaded = true;
+            BiliAccount.Instance.OnAccountChanged += Account_OnAccountChanged;
+            DouyuAccount.Instance.OnAccountChanged += Account_OnAccountChanged;
+            DouyinAccount.Instance.OnAccountChanged += Account_OnAccountChanged;
+            RefreshAccountUI();
+        }
+
+        private async void Account_OnAccountChanged(object sender, EventArgs e)
+        {
+            if (!pageLoaded) return;
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
-                BtnLoginBili.Visibility = Visibility.Collapsed;
-                BtnLogoutBili.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                txtBili.Text = "登录可享受高清直播";
-                BtnLoginBili.Visibility = Visibility.Visible;
-                BtnLogoutBili.Visibility = Visibility.Collapsed;
-            }
+                if (pageLoaded) RefreshAccountUI();
+            });
+        }
+
+        private void RefreshAccountUI()
+        {
+            txtBili.Text = BiliAccount.Instance.StatusMessage;
+            txtDouyu.Text = DouyuAccount.Instance.StatusMessage;
+            txtDouyin.Text = DouyinAccount.Instance.StatusMessage;
+            BtnLoginBili.Content = BiliAccount.Instance.HasSavedSession ? "重新登录" : "立即登录";
+            BtnLoginDouyu.Content = DouyuAccount.Instance.HasSavedSession ? "重新登录" : "立即登录";
+            BtnLoginDouyin.Content = DouyinAccount.Instance.HasSavedSession ? "重新登录" : "立即登录";
+            BtnLogoutBili.Visibility = BiliAccount.Instance.HasSavedSession ? Visibility.Visible : Visibility.Collapsed;
+            BtnLogoutDouyu.Visibility = DouyuAccount.Instance.HasSavedSession ? Visibility.Visible : Visibility.Collapsed;
+            BtnLogoutDouyin.Visibility = DouyinAccount.Instance.HasSavedSession ? Visibility.Visible : Visibility.Collapsed;
+            BtnLoginBili.IsEnabled = BtnLoginDouyu.IsEnabled = BtnLoginDouyin.IsEnabled = !accountBusy;
+            BtnLogoutBili.IsEnabled = BtnLogoutDouyu.IsEnabled = BtnLogoutDouyin.IsEnabled = !accountBusy;
         }
 
         private void LoadUI()
@@ -185,27 +211,7 @@ namespace AllLive.UWP.Views
             LiveDanmuSettingListWords.ItemsSource = settingVM.ShieldWords;
 
 
-            if(BiliAccount.Instance.Logined)
-            {
-                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
-                BtnLoginBili.Visibility = Visibility.Collapsed;
-                BtnLogoutBili.Visibility = Visibility.Visible;
-            }
-
-            if (DouyinAccount.Instance.Logined)
-            {
-                txtDouyin.Text = "已登录";
-                BtnLoginDouyin.Visibility = Visibility.Collapsed;
-                BtnLogoutDouyin.Visibility = Visibility.Visible;
-            }
-
-            if (DouyuAccount.Instance.Logined)
-            {
-                txtDouyu.Text = "已登录";
-                BtnLoginDouyu.Visibility = Visibility.Collapsed;
-                BtnLogoutDouyu.Visibility = Visibility.Visible;
-            }
-           
+            RefreshAccountUI();
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -248,79 +254,78 @@ namespace AllLive.UWP.Views
             await Launcher.LaunchFolderAsync(logFolder);
         }
 
+        private async Task RunLoginAsync(Func<Task> show, Action cancel)
+        {
+            if (accountBusy) return;
+            accountBusy = true;
+            cancelLogin = cancel;
+            RefreshAccountUI();
+            try { await show(); }
+            catch (Exception) { Utils.ShowMessageToast("无法打开登录窗口，请关闭其他弹窗后重试"); }
+            finally
+            {
+                cancelLogin = null;
+                accountBusy = false;
+                if (pageLoaded) RefreshAccountUI();
+            }
+        }
+
         private async void BtnLoginBili_Click(object sender, RoutedEventArgs e)
         {
-            if (BiliAccount.Instance.Logined)
-            {
-                Utils.ShowMessageToast("已登录");
-                return;
-            }
-            var result= await MessageCenter.BiliBiliLogin();
-            if (result)
-            {
-                txtBili.Text = $"已登录：{BiliAccount.Instance.UserName}";
-                BtnLoginBili.Visibility = Visibility.Collapsed;
-                BtnLogoutBili.Visibility = Visibility.Visible;
-            }
+            if (accountBusy) return;
+            var dialog = new AllLive.UWP.Controls.BiliLoginDialog();
+            await RunLoginAsync(async () => { await dialog.ShowAsync(); }, () => { dialog.Cancel(); dialog.Hide(); });
         }
-
-        private void BtnLogoutBili_Click(object sender, RoutedEventArgs e)
-        {
-            BiliAccount.Instance.Logout();
-            txtBili.Text = "登录可享受高清直播";
-            BtnLoginBili.Visibility = Visibility.Visible;
-            BtnLogoutBili.Visibility = Visibility.Collapsed;
-
-        }
-
         private async void BtnLoginDouyin_Click(object sender, RoutedEventArgs e)
         {
-            if (DouyinAccount.Instance.Logined)
-            {
-                Utils.ShowMessageToast("已登录");
-                return;
-            }
+            if (accountBusy) return;
             var dialog = new AllLive.UWP.Controls.DouyinLoginDialog();
-            await dialog.ShowAsync();
-            if (dialog.LoginSuccess)
-            {
-                txtDouyin.Text = "已登录";
-                BtnLoginDouyin.Visibility = Visibility.Collapsed;
-                BtnLogoutDouyin.Visibility = Visibility.Visible;
-            }
+            await RunLoginAsync(async () => { await dialog.ShowAsync(); }, dialog.Cancel);
         }
-
-        private void BtnLogoutDouyin_Click(object sender, RoutedEventArgs e)
-        {
-            DouyinAccount.Instance.Logout();
-            txtDouyin.Text = "登录后可搜索直播间";
-            BtnLoginDouyin.Visibility = Visibility.Visible;
-            BtnLogoutDouyin.Visibility = Visibility.Collapsed;
-        }
-
         private async void BtnLoginDouyu_Click(object sender, RoutedEventArgs e)
         {
-            if (DouyuAccount.Instance.Logined)
-            {
-                Utils.ShowMessageToast("已登录");
-                return;
-            }
+            if (accountBusy) return;
             var dialog = new AllLive.UWP.Controls.DouyuLoginDialog();
-            var loginOk = await dialog.ShowAsync();
-            if (loginOk)
+            await RunLoginAsync(async () => { await dialog.ShowAsync(); }, dialog.Cancel);
+        }
+        private async Task LogoutAsync(Action logout, string domain, TextBlock status)
+        {
+            if (accountBusy) return;
+            accountBusy = true;
+            logout();
+            RefreshAccountUI();
+            status.Text = "正在清理本平台网页会话…";
+            var cleanupView = new Microsoft.UI.Xaml.Controls.WebView2
             {
-                txtDouyu.Text = "已登录";
-                BtnLoginDouyu.Visibility = Visibility.Collapsed;
-                BtnLogoutDouyu.Visibility = Visibility.Visible;
+                Width = 1, Height = 1, Opacity = 0, IsHitTestVisible = false, IsTabStop = false
+            };
+            SettingsRoot.Children.Add(cleanupView);
+            bool failed = false;
+            try { await WebLoginSession.ClearCookiesAsync(cleanupView, domain); }
+            catch (Exception) { failed = true; }
+            finally
+            {
+                cleanupView.Close();
+                SettingsRoot.Children.Remove(cleanupView);
+                accountBusy = false;
+                if (pageLoaded)
+                {
+                    RefreshAccountUI();
+                    if (failed) status.Text = "已清除应用会话；网页会话清理失败，下次登录前将重试";
+                }
             }
         }
-
-        private void BtnLogoutDouyu_Click(object sender, RoutedEventArgs e)
+        private async void BtnLogoutBili_Click(object sender, RoutedEventArgs e)
         {
-            DouyuAccount.Instance.Logout();
-            txtDouyu.Text = "登录后可观看原画高画质";
-            BtnLoginDouyu.Visibility = Visibility.Visible;
-            BtnLogoutDouyu.Visibility = Visibility.Collapsed;
+            await LogoutAsync(BiliAccount.Instance.Logout, "bilibili.com", txtBili);
+        }
+        private async void BtnLogoutDouyu_Click(object sender, RoutedEventArgs e)
+        {
+            await LogoutAsync(DouyuAccount.Instance.Logout, "douyu.com", txtDouyu);
+        }
+        private async void BtnLogoutDouyin_Click(object sender, RoutedEventArgs e)
+        {
+            await LogoutAsync(DouyinAccount.Instance.Logout, "douyin.com", txtDouyin);
         }
     }
 }

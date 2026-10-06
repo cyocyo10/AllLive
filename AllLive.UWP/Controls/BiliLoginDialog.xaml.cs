@@ -1,195 +1,114 @@
-﻿using AllLive.Core.Helper;
 using AllLive.UWP.Helper;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using System.Timers;
-using AllLive.Core.Danmaku.Proto;
-using NLog.Fluent;
-using System.Xml.Linq;
-
-// https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“内容对话框”项模板
 
 namespace AllLive.UWP.Controls
 {
     public sealed partial class BiliLoginDialog : ContentDialog
     {
-        Timer timer;
+        private readonly LoginAttempt attempt = new LoginAttempt();
+        private bool open;
+        private bool loading;
         public BiliLoginDialog()
         {
-            this.InitializeComponent();
-            this.Loaded += BiliLoginDialog_Loaded;
-            this.Unloaded += BiliLoginDialog_Unloaded; ;
+            InitializeComponent();
+            Loaded += (s, e) => { open = true; LoadQRCode(); };
+            Unloaded += (s, e) => Cancel();
+            Closing += (s, e) => Cancel();
+            Closed += (s, e) => Cancel();
         }
-
-        private void BiliLoginDialog_Unloaded(object sender, RoutedEventArgs e)
-        {
-            timer?.Close();
-            timer?.Dispose();
-            timer = null;
-        }
-
-        private void BiliLoginDialog_Loaded(object sender, RoutedEventArgs e)
-        {
-            LoadQRCode();
-        }
-
+        public void Cancel() { open = false; attempt.Cancel(); }
         private void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
             LoadQRCode();
         }
-
-        private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-        {
-
-        }
-
-        private void imgQR_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            LoadQRCode();
-        }
-
-        string qrcodeUrl = "";
-        string qrcodeKey = "";
+        private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args) { Cancel(); }
+        private void imgQR_Tapped(object sender, TappedRoutedEventArgs e) { LoadQRCode(); }
         private async void LoadQRCode()
         {
+            if (!open || loading) return;
+            var token = attempt.Begin();
+            loading = true;
+            IsPrimaryButtonEnabled = false;
+            loaddingImage.Visibility = Visibility.Visible;
+            txtStatus.Text = "正在获取二维码…";
+            imgQR.Source = null;
             try
             {
-                loaddingImage.Visibility = Visibility.Visible;
-                txtStatus.Text = "正在获取二维码...";
-                imgQR.Source = null;
-                var qrResp = await HttpUtil.GetString("https://passport.bilibili.com/x/passport-login/web/qrcode/generate");
-                var json = JObject.Parse(qrResp);
-                if (json["code"].ToString() == "0")
+                var json = JObject.Parse(await LoginHttp.GetStringAsync("https://passport.bilibili.com/x/passport-login/web/qrcode/generate", null, token));
+                token.ThrowIfCancellationRequested();
+                var key = (string)json["data"]?["qrcode_key"];
+                var url = (string)json["data"]?["url"];
+                if ((int?)json["code"] != 0 || string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(url))
+                    throw new InvalidOperationException("Invalid QR response");
+                var writer = new ZXing.BarcodeWriter
                 {
-
-                    txtStatus.Text = "等待扫描";
-                    qrcodeKey = json["data"]["qrcode_key"].ToString();
-                    qrcodeUrl = json["data"]["url"].ToString();
-
-                    // 创建二维码
-                    var qrCode = new ZXing.BarcodeWriter
-                    {
-                        Format = ZXing.BarcodeFormat.QR_CODE,
-                        Options = new ZXing.Common.EncodingOptions
-                        {
-                            Width = 260,
-                            Height = 260,
-                            Margin = 4,
-                        }
-                    };
-                    var qrCodeImage = qrCode.Write(qrcodeUrl);
-                    imgQR.Source = qrCodeImage;
-                    StartPoll();
-                }
-                else
-                {
-                    txtStatus.Text = json["message"].ToString();
-                }
+                    Format = ZXing.BarcodeFormat.QR_CODE,
+                    Options = new ZXing.Common.EncodingOptions { Width = 260, Height = 260, Margin = 4 }
+                };
+                imgQR.Source = writer.Write(url);
+                txtStatus.Text = "等待扫描";
+                _ = PollAsync(key, token);
             }
-            catch (Exception ex)
-            {
-                LogHelper.Log("加载哔哩哔哩登录二维码失败", LogType.ERROR, ex);
-                txtStatus.Text = "二维码加载失败";
-            }
+            catch (OperationCanceledException) { }
+            catch (Exception) { if (!token.IsCancellationRequested) txtStatus.Text = "二维码加载失败，请检查网络后刷新"; }
             finally
             {
-                loaddingImage.Visibility = Visibility.Collapsed;
+                loading = false;
+                if (!token.IsCancellationRequested)
+                {
+                    IsPrimaryButtonEnabled = true;
+                    loaddingImage.Visibility = Visibility.Collapsed;
+                }
             }
         }
-        private async void PollQRStatus()
+        private async Task PollAsync(string key, CancellationToken token)
         {
             try
             {
-
-                using (var response = await HttpUtil.Get($"https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key={qrcodeKey}"))
+                while (!token.IsCancellationRequested)
                 {
-
-                    var respContent = await response.Content.ReadAsStringAsync();
-
-                    var json = JObject.Parse(respContent);
-                    if (json["code"].ToString() != "0")
+                    await Task.Delay(TimeSpan.FromSeconds(3), token);
+                    using (var response = await LoginHttp.GetAsync("https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key=" + Uri.EscapeDataString(key), null, token))
                     {
-                        return;
-                    }
-
-                    var data = json["data"];
-                    var code = data["code"].ToInt32();
-                    if (code == 0)
-                    {
-                        var cookies = new List<string>();
-                        long userId = 0;
-                        foreach (var item in response.Headers.GetValues("Set-Cookie"))
+                        var body = await response.Content.ReadAsStringAsync();
+                        token.ThrowIfCancellationRequested();
+                        var json = JObject.Parse(body);
+                        if ((int?)json["code"] != 0) throw new InvalidOperationException("QR status unavailable");
+                        var code = (int?)json["data"]?["code"];
+                        if (code == 0)
                         {
-                            var cookie = item.Split(';')[0];
-                            if (cookie.Contains("DedeUserID"))
+                            txtStatus.Text = "扫码已确认，正在验证账号…";
+                            System.Collections.Generic.IEnumerable<string> values;
+                            if (!response.Headers.TryGetValues("Set-Cookie", out values)) throw new InvalidOperationException("Missing session");
+                            var cookie = string.Join(";", values.Select(x => x.Split(';')[0]));
+                            if (await BiliAccount.Instance.TryLoginAsync(cookie, token))
                             {
-                                long.TryParse(cookie.Split('=')[1], out userId);
+                                token.ThrowIfCancellationRequested();
+                                txtStatus.Text = BiliAccount.Instance.StatusMessage;
+                                Utils.ShowMessageToast("哔哩哔哩登录成功");
+                                Hide();
+                                Cancel();
                             }
-                            cookies.Add(cookie);
+                            else if (!token.IsCancellationRequested) txtStatus.Text = BiliAccount.Instance.StatusMessage;
+                            return;
                         }
-
-
-                        if (cookies.Count > 0)
-                        {
-                            var cookieStr = cookies.Aggregate((x, y) => x + ";" + y);
-                            SettingHelper.SetValue(SettingHelper.BILI_COOKIE, cookieStr);
-                            SettingHelper.SetValue(SettingHelper.BILI_USER_ID, userId);
-                            await BiliAccount.Instance.LoadUserInfo();
-
-                            this.Hide();
-                        }
-                    }
-                    else if (code == 86038)
-                    {
-                        txtStatus.Text = "二维码已过期";
-                        qrcodeKey = "";
-                        timer?.Close();
-                        timer?.Dispose();
-                        timer = null;
-                    }
-                    else if (code == 86090)
-                    {
-                        txtStatus.Text = "已扫描，请确认登录";
+                        if (code == 86038) { txtStatus.Text = "二维码已过期，请刷新"; return; }
+                        if (code == 86090) txtStatus.Text = "已扫描，请在哔哩哔哩App确认登录";
+                        else if (code == 86101) txtStatus.Text = "等待扫描";
+                        else throw new InvalidOperationException("Unknown QR status");
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                LogHelper.Log("轮询二维码失败", LogType.ERROR, ex);
-                txtStatus.Text = "轮询失败";
-            }
-
+            catch (OperationCanceledException) { }
+            catch (Exception) { if (!token.IsCancellationRequested) txtStatus.Text = "登录检测失败，请检查网络后刷新"; }
         }
-        private void StartPoll()
-        {
-            timer?.Close();
-            timer?.Dispose();
-            timer = new Timer(3 * 1000);
-            timer.Elapsed += (sender, e) =>
-            {
-                _ = this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    PollQRStatus();
-                });
-            };
-            timer.Start();
-        }
-
-
-
     }
 }

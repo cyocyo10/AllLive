@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings><Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <Compile Include="Program.cs" /><Compile Include="TestDoubles.cs" /><Compile Include="SettingsDoubles.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/LoginSession.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/LoginHttp.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/WebLoginSession.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/BiliAccount.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/DouyuAccount.cs" />
+    <Compile Include="../../AllLive.UWP/Helper/DouyinAccount.cs" />
+    <Compile Include="../../AllLive.UWP/Views/SettingsPage.xaml.cs" />
+    <Compile Include="../../AllLive.UWP/ViewModels/SettingVM.cs" />
+    <Compile Include="../../AllLive.UWP/Controls/BiliLoginDialog.xaml.cs" />
+    <Compile Include="../../AllLive.UWP/Controls/DouyuLoginDialog.xaml.cs" />
+    <Compile Include="../../AllLive.UWP/Controls/DouyinLoginDialog.xaml.cs" />
+  </ItemGroup>
+</Project>

@@ -22,7 +22,12 @@ namespace AllLive.UWP.Helper
             }
         }
 
-        public bool Logined { get; set; } = false;
+        // Legacy compatibility: a saved session is available to existing requests.
+        // UI must use VerificationState; this flag does not prove server-side login.
+        public bool Logined { get; private set; } = false;
+        public bool HasSavedSession => !string.IsNullOrWhiteSpace(Cookie);
+        public AccountVerificationState VerificationState { get; private set; } = AccountVerificationState.SignedOut;
+        public string StatusMessage => HasSavedSession ? "已保存会话，未验证" : "尚未保存登录会话";
 
         public string Cookie
         {
@@ -34,36 +39,37 @@ namespace AllLive.UWP.Helper
 
         public void InitLoginInfo()
         {
-            Logined = !string.IsNullOrEmpty(Cookie);
+            Logined = HasSavedSession;
+            VerificationState = Logined ? AccountVerificationState.Unverified : AccountVerificationState.SignedOut;
             if (Logined)
             {
                 SetDouyinSiteCookie();
             }
+            OnAccountChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void SetCookie(string cookie)
         {
             SettingHelper.SetValue(SettingHelper.DOUYIN_COOKIE, cookie);
-            Logined = !string.IsNullOrEmpty(cookie);
+            Logined = HasSavedSession;
+            VerificationState = Logined ? AccountVerificationState.Unverified : AccountVerificationState.SignedOut;
             SetDouyinSiteCookie();
-            OnAccountChanged?.Invoke(this, null);
+            OnAccountChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void SetDouyinSiteCookie()
         {
-            var site = MainVM.Sites.FirstOrDefault(x => x.SiteType == LiveSite.Douyin);
-            if (site != null)
-            {
-                (site.LiveSite as Douyin).SearchCookie = Cookie;
-            }
+            var site = MainVM.Sites?.FirstOrDefault(x => x.SiteType == LiveSite.Douyin)?.LiveSite as Douyin;
+            if (site != null) site.SearchCookie = Cookie;
         }
 
         public void Logout()
         {
             Logined = false;
+            VerificationState = AccountVerificationState.SignedOut;
             SettingHelper.SetValue(SettingHelper.DOUYIN_COOKIE, "");
             SetDouyinSiteCookie();
-            OnAccountChanged?.Invoke(this, null);
+            OnAccountChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

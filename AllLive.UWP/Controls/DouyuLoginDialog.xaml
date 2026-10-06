@@ -17,7 +17,7 @@
             CornerRadius="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="40" />
-                <RowDefinition Height="600" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <!--  自定义标题栏:按住可拖动整个登录框  -->
             <Grid
@@ -42,7 +42,9 @@
                         Margin="0,0,8,0"
                         Padding="12,0"
                         Click="BtnDone_Click"
-                        Content="完成登录" />
+                        Content="保存会话"
+                        IsEnabled="False" />
+                    <Button Height="30" Margin="0,0,8,0" Padding="12,0" Click="BtnRetry_Click" Content="重试页面" />
                     <Button
                         x:Name="BtnCancel"
                         Height="30"
@@ -54,10 +56,10 @@
             </Grid>
 
             <Grid Grid.Row="1">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <muxc:WebView2
                     x:Name="webView"
-                    Width="520"
-                    Height="600" />
+                    Grid.Row="1" />
                 <Border
                     VerticalAlignment="Top"
                     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -67,7 +69,8 @@
                         Margin="12,4"
                         FontSize="12"
                         Foreground="Gray"
-                        Text="正在初始化..." />
+                        TextWrapping="Wrap"
+                        Text="正在初始化…" />
                 </Border>
             </Grid>
         </Grid>

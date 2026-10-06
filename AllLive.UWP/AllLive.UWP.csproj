@@ -161,6 +161,9 @@
     <Compile Include="Converters\ImageCovert.cs" />
     <Compile Include="Converters\NumberToStringConvert.cs" />
     <Compile Include="Helper\BiliAccount.cs" />
+    <Compile Include="Helper\LoginSession.cs" />
+    <Compile Include="Helper\LoginHttp.cs" />
+    <Compile Include="Helper\WebLoginSession.cs" />
     <Compile Include="Helper\DouyinAccount.cs" />
     <Compile Include="Helper\DouyuAccount.cs" />
     <Compile Include="Helper\ExceptionHandler.cs" />

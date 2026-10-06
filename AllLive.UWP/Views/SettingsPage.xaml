@@ -8,7 +8,7 @@
     xmlns:my="using:Microsoft.UI.Xaml.Controls"
     mc:Ignorable="d">
 
-    <Grid>
+    <Grid x:Name="SettingsRoot">
         <ScrollViewer>
             <Grid Margin="12" HorizontalAlignment="Stretch">
                 <StackPanel MaxWidth="800" HorizontalAlignment="Stretch">
@@ -146,36 +146,40 @@
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="4">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <Image
                                 Width="36"
                                 Height="36"
                                 Margin="0,0,12,0"
                                 Source="/Assets/Logo/bilibili.png" />
-                            <StackPanel VerticalAlignment="Center">
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock>哔哩哔哩</TextBlock>
                                 <TextBlock
                                     x:Name="txtBili"
+                                    TextWrapping="Wrap"
                                     FontSize="12"
                                     Foreground="Gray">
                                     登录后可享受高清直播
                                 </TextBlock>
                             </StackPanel>
-                        </StackPanel>
+                        </Grid>
 
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                         <Button
                             x:Name="BtnLoginBili"
-                            HorizontalAlignment="Right"
                             Click="BtnLoginBili_Click">
                             立即登录
                         </Button>
                         <Button
                             x:Name="BtnLogoutBili"
-                            HorizontalAlignment="Right"
+                            Margin="8,0,0,0"
                             Click="BtnLogoutBili_Click"
                             Visibility="Collapsed">
-                            注销登录
+                            清除会话
                         </Button>
+                        </StackPanel>
                     </Grid>
                     <Grid
                         Margin="0,8,0,0"
@@ -184,11 +188,13 @@
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="4">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock>抖音</TextBlock>
                                 <TextBlock
                                     x:Name="txtDouyin"
+                                    TextWrapping="Wrap"
                                     FontSize="12"
                                     Foreground="Gray">
                                     登录后可搜索直播间
@@ -196,19 +202,20 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                         <Button
                             x:Name="BtnLoginDouyin"
-                            HorizontalAlignment="Right"
                             Click="BtnLoginDouyin_Click">
                             立即登录
                         </Button>
                         <Button
                             x:Name="BtnLogoutDouyin"
-                            HorizontalAlignment="Right"
+                            Margin="8,0,0,0"
                             Click="BtnLogoutDouyin_Click"
                             Visibility="Collapsed">
-                            注销登录
+                            清除会话
                         </Button>
+                        </StackPanel>
                     </Grid>
                     <Grid
                         Margin="0,8,0,0"
@@ -217,11 +224,13 @@
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="4">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock>斗鱼</TextBlock>
                                 <TextBlock
                                     x:Name="txtDouyu"
+                                    TextWrapping="Wrap"
                                     FontSize="12"
                                     Foreground="Gray">
                                     登录后可观看原画高画质
@@ -229,19 +238,20 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                         <Button
                             x:Name="BtnLoginDouyu"
-                            HorizontalAlignment="Right"
                             Click="BtnLoginDouyu_Click">
                             立即登录
                         </Button>
                         <Button
                             x:Name="BtnLogoutDouyu"
-                            HorizontalAlignment="Right"
+                            Margin="8,0,0,0"
                             Click="BtnLogoutDouyu_Click"
                             Visibility="Collapsed">
-                            注销登录
+                            清除会话
                         </Button>
+                        </StackPanel>
                     </Grid>
                     <TextBlock Margin="4,12" FontSize="18">互动</TextBlock>
                     <Grid

@@ -7,18 +7,21 @@
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     Title="登录抖音"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
-    PrimaryButtonText="完成登录"
+    PrimaryButtonText="保存会话"
+    IsPrimaryButtonEnabled="False"
     SecondaryButtonClick="ContentDialog_SecondaryButtonClick"
     SecondaryButtonText="取消"
     mc:Ignorable="d">
 
     <StackPanel>
+        <Button Content="重试页面" Click="Retry_Click" Margin="0,0,0,8" />
         <TextBlock
             x:Name="txtStatus"
             Margin="0,0,0,8"
             FontSize="12"
             Foreground="Gray"
-            Text="正在初始化..." />
+            TextWrapping="Wrap"
+            Text="正在初始化…" />
         <muxc:WebView2
             x:Name="webView"
             Width="500"
