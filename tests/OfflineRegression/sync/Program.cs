@@ -251,6 +251,36 @@ CREATE INDEX idx_history_room_site ON History(room_id,site_name);");
             catch(ArgumentException) {} Unchanged();
         });
 
+        Case("signalr-double-closed-event-awaits-and-unsubscribes", "Closed fixture awaits subscribed callbacks and respects removal without networking", () => {
+            var connection = new Microsoft.AspNetCore.SignalR.Client.HubConnection();
+            var error = new InvalidOperationException("fixture close");
+            var gate = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            int calls = 0;
+            Func<Exception, System.Threading.Tasks.Task> first = async ex => {
+                Assert(ReferenceEquals(ex, error), "Close exception changed");
+                await gate.Task;
+                calls++;
+            };
+            Func<Exception, System.Threading.Tasks.Task> second = ex => {
+                calls++;
+                return System.Threading.Tasks.Task.CompletedTask;
+            };
+            connection.RaiseClosedAsync(error).GetAwaiter().GetResult();
+            connection.Closed += first;
+            connection.Closed += second;
+            var notification = connection.RaiseClosedAsync(error);
+            Assert(!notification.IsCompleted && calls == 0, "Fixture must await the first callback");
+            gate.SetResult(true);
+            notification.GetAwaiter().GetResult();
+            Assert(calls == 2, "Fixture did not await both subscribers");
+            connection.Closed -= first;
+            connection.RaiseClosedAsync(error).GetAwaiter().GetResult();
+            Assert(calls == 3, "Removed subscriber was retained");
+            connection.Closed -= second;
+            connection.RaiseClosedAsync(error).GetAwaiter().GetResult();
+            Assert(calls == 3, "Empty event invoked a removed callback");
+        });
+
         var version = typeof(SqliteConnection).Assembly.GetName().Version.ToString();
         File.WriteAllText(Path.Combine(ResultDirectory, "results.json"), JsonConvert.SerializeObject(new {baselineCommit="c6951df959b7ead0d93edc087188788b49f1e273", runtime=Environment.Version.ToString(), sqliteAssembly=version, sourceVariant=Environment.GetEnvironmentVariable("HARNESS_SOURCE_LABEL") ?? "fixed", execution="whole selected SyncVM.cs and DatabaseHelper.cs; actual Microsoft.Data.Sqlite 8.0.6 file databases; UI and SignalR doubles", total=Results.Count, passed=Passed, failed=Results.Count-Passed, results=Results}, Formatting.Indented));
         Console.WriteLine($"{Passed}/{Results.Count} passed using real Microsoft.Data.Sqlite {version}.");

@@ -49,6 +49,13 @@ namespace Microsoft.AspNetCore.SignalR.Client
     public class HubConnection
     {
         public event Func<Exception,Task> Closed;
+        public async Task RaiseClosedAsync(Exception error)
+        {
+            var handlers = Closed;
+            if (handlers == null) return;
+            foreach (Func<Exception, Task> handler in handlers.GetInvocationList())
+                await handler(error);
+        }
         public string ConnectionId {get;} = "not-connected";
         public HubConnectionState State {get;} = HubConnectionState.Disconnected;
         public Task StartAsync() => throw new InvalidOperationException("Network is disabled in harness");

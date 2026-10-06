@@ -407,8 +407,6 @@ namespace AllLive.Core.Danmaku
                 Trace.WriteLine($"Brotli decompression runtime method is unavailable: {ex.Message}");
                 return HandleBrotliUnavailable();
             }
-
-            return Array.Empty<byte>();
         }
 
         private byte[] HandleBrotliUnavailable()

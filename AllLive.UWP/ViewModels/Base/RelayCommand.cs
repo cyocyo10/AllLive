@@ -13,6 +13,12 @@ namespace AllLive.UWP.ViewModels
         private Func<T, bool> _CanExecute;
         public event EventHandler CanExecuteChanged;
 
+        /// <summary>Notifies subscribers on the calling thread that command state changed.</summary>
+        public void RaiseCanExecuteChanged()
+        {
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public RelayCommand(Action<T> command) : this(command, null)
         {
         }
@@ -42,6 +48,12 @@ namespace AllLive.UWP.ViewModels
         private Action _Command;
         private Action<bool> _CanExecute;
         public event EventHandler CanExecuteChanged;
+
+        /// <summary>Notifies subscribers on the calling thread that command state changed.</summary>
+        public void RaiseCanExecuteChanged()
+        {
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         public RelayCommand(Action command) : this(command, null)
         {

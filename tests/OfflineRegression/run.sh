@@ -7,7 +7,7 @@ export DOTNET_GENERATE_ASPNET_CERTIFICATE=false DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=
 export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-$PWD/.cache/cli-home}"
 export NUGET_PACKAGES="${NUGET_PACKAGES:-$PWD/.cache/nuget-packages}"
 mkdir -p results
-for pair in main:AuditHarness douyin:DouyinHarness sync:SyncHarness tls-sites:SiteTlsHarness; do
+for pair in main:AuditHarness douyin:DouyinHarness sync:SyncHarness tls-sites:SiteTlsHarness warnings:WarningHarness; do
   folder="${pair%%:*}"; name="${pair##*:}"; project="$folder/$name.csproj"
   "$DOTNET_BIN" restore "$project" --configfile NuGet.Config
   "$DOTNET_BIN" build "$project" --no-restore --configuration Release

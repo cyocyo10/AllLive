@@ -42,18 +42,18 @@ namespace AllLive.UWP.Helper
                     LogHelper.Log("LoggingDouyinScriptRunner resource: " + name, LogType.DEBUG);
                 }
 
-                string ReadResource(string suffix)
+                async Task<string> ReadResourceAsync(string suffix)
                 {
                     var resourceName = FindResource(assembly, suffix);
                     using (var stream = assembly.GetManifestResourceStream(resourceName))
                     using (var reader = new StreamReader(stream ?? throw new InvalidOperationException($"Missing resource: {resourceName}"), Encoding.UTF8))
                     {
-                        return reader.ReadToEnd();
+                        return await reader.ReadToEndAsync().ConfigureAwait(false);
                     }
                 }
 
-                var webMsSdk = ReadResource("webmssdk.js");
-                var aBogus = ReadResource("a_bogus.js");
+                var webMsSdk = await ReadResourceAsync("webmssdk.js").ConfigureAwait(false);
+                var aBogus = await ReadResourceAsync("a_bogus.js").ConfigureAwait(false);
                 return webMsSdk + "\n" + aBogus;
             }
             catch (Exception ex)

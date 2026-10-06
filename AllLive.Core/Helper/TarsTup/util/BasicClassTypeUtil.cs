@@ -123,9 +123,9 @@ namespace Tup
                 
                 return Activator.CreateInstance(type);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
         }
 

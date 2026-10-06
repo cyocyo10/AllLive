@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProductionSourceRoot Condition="'$(ProductionSourceRoot)' == ''">$(MSBuildThisFileDirectory)../../../</ProductionSourceRoot>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(ProductionSourceRoot)/AllLive.Core/AllLive.Core.csproj" />
+    <Compile Include="Program.cs" />
+    <Compile Include="LogDouble.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.UWP/ViewModels/Base/RelayCommand.cs" Link="Production/RelayCommand.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.UWP/Helper/LoggingDouyinScriptRunner.cs" Link="Production/LoggingDouyinScriptRunner.cs" />
+  </ItemGroup>
+</Project>

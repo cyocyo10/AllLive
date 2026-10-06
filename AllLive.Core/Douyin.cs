@@ -46,7 +46,7 @@ namespace AllLive.Core
             { "Authority", AUTHORITY }
         };
 
-        private async Task<Dictionary<string, string>> GetRequestHeaders(bool forceRefresh = false)
+        private Dictionary<string, string> GetRequestHeaders(bool forceRefresh = false)
         {
             // 如果已有Cookie且不需要强制刷新，直接返回副本
             if (!forceRefresh && (headers.ContainsKey("Cookie") || headers.ContainsKey("cookie")))
@@ -64,7 +64,7 @@ namespace AllLive.Core
         public async Task<List<LiveCategory>> GetCategores()
         {
             List<LiveCategory> categories = new List<LiveCategory>();
-            var resp = await HttpUtil.GetString("https://live.douyin.com/", await GetRequestHeaders());
+            var resp = await HttpUtil.GetString("https://live.douyin.com/", GetRequestHeaders());
 
             Regex regex = new Regex("\\{\\\\\"pathname\\\\\":\\\\\"\\/\\\\\",\\\\\"categoryData.*?\\]\\\\n", RegexOptions.Singleline);
             Match match = regex.Match(resp);
@@ -133,7 +133,7 @@ namespace AllLive.Core
 
             var requestUrl = await GetABougs(url);
             var resp = await HttpUtil.GetString(requestUrl,
-                headers: await GetRequestHeaders()
+                headers: GetRequestHeaders()
             );
             Trace.WriteLine($"Douyin.GetCategoryRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
@@ -198,7 +198,7 @@ namespace AllLive.Core
 
             var requestUrl = await GetABougs(url);
             var resp = await HttpUtil.GetString(requestUrl,
-                headers: await GetRequestHeaders()
+                headers: GetRequestHeaders()
             );
             Trace.WriteLine($"Douyin.GetRecommendRooms url: {requestUrl}");
             if (string.IsNullOrWhiteSpace(resp) || !resp.TrimStart().StartsWith("{"))
@@ -275,7 +275,7 @@ namespace AllLive.Core
                 return result;
             }
             var roomStatus = status == 2;
-            var headers = await GetRequestHeaders(forceRefresh: true);
+            var headers = GetRequestHeaders(forceRefresh: true);
             var coverUrlList = room?["cover"]?["url_list"] as JArray;
             var avatarUrlList = owner?["avatar_thumb"]?["url_list"] as JArray;
             return new LiveRoomDetail()
@@ -353,7 +353,7 @@ namespace AllLive.Core
             Trace.WriteLine($"[RoomDetail] roomStatus={roomStatus}");
 
             Trace.WriteLine($"[RoomDetail] Getting Cookie (forceRefresh=true)...");
-            var headers = await GetRequestHeaders(forceRefresh: true);
+            var headers = GetRequestHeaders(forceRefresh: true);
             var cookie = headers.ContainsKey("Cookie") ? headers["Cookie"] : "";
             Trace.WriteLine($"[RoomDetail] Cookie length={cookie.Length}");
             Trace.WriteLine($"[RoomDetail] Cookie preview={cookie.Substring(0, Math.Min(100, cookie.Length))}...");
@@ -404,7 +404,7 @@ namespace AllLive.Core
             var anchor = roomData["roomStore"]?["roomInfo"]?["anchor"];
             var roomStatus = (room?["status"]?.ToObject<int>() ?? 0) == 2;
 
-            var headers = await GetRequestHeaders(forceRefresh: true);
+            var headers = GetRequestHeaders(forceRefresh: true);
             var htmlCoverUrlList = room?["cover"]?["url_list"] as JArray;
             var htmlOwnerAvatarList = owner?["avatar_thumb"]?["url_list"] as JArray;
             var htmlAnchorAvatarList = anchor?["avatar_thumb"]?["url_list"] as JArray;
@@ -446,7 +446,7 @@ namespace AllLive.Core
             try
             {
                 using (var resp = await HttpUtil.Head($"https://live.douyin.com/{webRid}",
-                    headers: await GetRequestHeaders()
+                    headers: GetRequestHeaders()
                 ))
                 {
                     var dyCookie = "";
@@ -489,7 +489,7 @@ namespace AllLive.Core
 
         private async Task<JToken> GetRoomDataHtml(string webRid)
         {
-            var requestHeaders = await GetRequestHeaders();
+            var requestHeaders = GetRequestHeaders();
             var resp = await HttpUtil.GetString($"https://live.douyin.com/{webRid}",
                 headers: requestHeaders
             );
@@ -521,7 +521,7 @@ namespace AllLive.Core
                 };
             var url = $"https://live.douyin.com/webcast/room/web/enter/?{Utils.BuildQueryString(reqParams)}";
 
-            var requestHeaders = await GetRequestHeaders();
+            var requestHeaders = GetRequestHeaders();
             // 使用动态 Referer（包含房间号，参考 DouyinLiveRecorder / dart_simple_live）
             requestHeaders["Referer"] = $"https://live.douyin.com/{webRid}";
 
@@ -538,7 +538,7 @@ namespace AllLive.Core
         private async Task<JToken> GetRoomDataByRoomID(string roomId)
         {
             var resp = await HttpUtil.GetString($"https://webcast.amemv.com/webcast/room/reflow/info/",
-                headers: await GetRequestHeaders(),
+                headers: GetRequestHeaders(),
                 queryParameters: new Dictionary<string, string>
                 {
                     {"type_id","0" },

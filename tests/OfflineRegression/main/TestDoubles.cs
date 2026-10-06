@@ -110,14 +110,6 @@ namespace AllLive.UWP.ViewModels
         public virtual void DoPropertyChanged(string name) { }
         public virtual void HandleError(Exception e,string m="error") { LastError=e; }
     }
-    public class RelayCommand : System.Windows.Input.ICommand
-    {
-        readonly Action _action;
-        public RelayCommand(Action action) { _action=action; }
-        public event EventHandler CanExecuteChanged;
-        public bool CanExecute(object p)=>true;
-        public void Execute(object p)=>_action();
-    }
     public class SettingVM { public List<string> ShieldWords{get;set;}=new(); }
 }
 namespace AuditHarness

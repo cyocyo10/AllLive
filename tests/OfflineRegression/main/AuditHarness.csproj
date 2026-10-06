@@ -20,5 +20,6 @@
     <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Models/*.cs" Link="Production/Models/%(Filename)%(Extension)" />
     <Compile Include="$(ProductionSourceRoot)/AllLive.Core/Interface/*.cs" Link="Production/Interface/%(Filename)%(Extension)" />
     <Compile Include="$(ProductionSourceRoot)/AllLive.UWP/ViewModels/LiveRoomVM.cs" Link="Production/LiveRoomVM.cs" />
+    <Compile Include="$(ProductionSourceRoot)/AllLive.UWP/ViewModels/Base/RelayCommand.cs" Link="Production/RelayCommand.cs" />
   </ItemGroup>
 </Project>

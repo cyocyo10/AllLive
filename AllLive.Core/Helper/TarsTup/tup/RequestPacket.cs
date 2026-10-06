@@ -103,7 +103,7 @@ namespace Tup
             catch (Exception e)
             {
                 QTrace.Trace(this + " ReadFrom Exception: " + e.Message);
-                throw e;
+                throw;
             }
 
 

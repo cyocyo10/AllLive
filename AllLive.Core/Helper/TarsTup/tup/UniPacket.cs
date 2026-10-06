@@ -173,7 +173,7 @@ namespace Tup
             catch (Exception e)
             {
                 QTrace.Trace(this + " Decode Exception: " + e.Message);
-                throw (e);
+                throw;
             }
         }
 
