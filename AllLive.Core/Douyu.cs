@@ -220,7 +220,7 @@ namespace AllLive.Core
             try
             {
                 var playData = await RequestPlayData(rid, rate, cdn);
-                return ParsePlayUrl(playData);
+                return DouyuStreamUrl.Normalize(ParsePlayUrl(playData));
             }
             catch (Exception ex)
             {
