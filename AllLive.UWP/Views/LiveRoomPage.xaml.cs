@@ -587,9 +587,13 @@ namespace AllLive.UWP.Views
 
                 var config = new MediaSourceConfig();
                 config.FFmpegOptions.Add("rtsp_transport", "tcp");
-                // 直播流断线重连（对齐 pure_live fijk reconnect / network-timeout）
-                config.FFmpegOptions.Add("reconnect", "1");
-                config.FFmpegOptions.Add("reconnect_streamed", "1");
+                // Douyu live FLV can restart its timeline after a connection ends.
+                // Let MediaEnded/MediaFailed reopen a fresh media source instead of
+                // splicing another HTTP response into the existing demuxer/decoder.
+                // Keep transparent reconnect unchanged for the other platforms.
+                var reconnectInPlace = liveRoomVM.SiteName != "斗鱼直播";
+                config.FFmpegOptions.Add("reconnect", reconnectInPlace ? "1" : "0");
+                config.FFmpegOptions.Add("reconnect_streamed", reconnectInPlace ? "1" : "0");
                 config.FFmpegOptions.Add("reconnect_delay_max", "5");
                 config.FFmpegOptions.Add("rw_timeout", "15000000"); // 15s, 微秒
                 config.FFmpegOptions.Add("timeout", "15000000");
