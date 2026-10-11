@@ -40,10 +40,27 @@ namespace AllLive.UWP.ViewModels
             AddFavoriteCommand = new RelayCommand(AddFavorite);
             RemoveFavoriteCommand = new RelayCommand(RemoveFavorite);
 
-            // 初始化消息批量处理定时器
-            _messageProcessTimer = new Timer(MESSAGE_BATCH_INTERVAL);
-            _messageProcessTimer.Elapsed += ProcessMessageQueue;
-            _messageProcessTimer.AutoReset = true;
+        }
+
+        private void StartMessageProcessing()
+        {
+            if (_messageProcessTimer == null)
+            {
+                _messageProcessTimer = new Timer(MESSAGE_BATCH_INTERVAL);
+                _messageProcessTimer.Elapsed += ProcessMessageQueue;
+                _messageProcessTimer.AutoReset = true;
+            }
+            _messageProcessTimer.Start();
+        }
+
+        private void StopMessageProcessing()
+        {
+            var timer = _messageProcessTimer;
+            _messageProcessTimer = null;
+            if (timer == null) return;
+            timer.Stop();
+            timer.Elapsed -= ProcessMessageQueue;
+            timer.Dispose();
         }
         public ICommand AddFavoriteCommand { get; set; }
         public ICommand RemoveFavoriteCommand { get; set; }
@@ -274,10 +291,7 @@ namespace AllLive.UWP.ViewModels
 
                 LiveDanmaku.NewMessage += LiveDanmaku_NewMessage;
                 LiveDanmaku.OnClose += LiveDanmaku_OnClose;
-                if (_messageProcessTimer != null && !_messageProcessTimer.Enabled)
-                {
-                    _messageProcessTimer.Start();
-                }
+                StartMessageProcessing();
                 await LiveDanmaku.Start(result.DanmakuData);
                 if (detail.Status)
                 {
@@ -494,6 +508,7 @@ namespace AllLive.UWP.ViewModels
 
         private void ProcessMessageQueue(object sender, ElapsedEventArgs e)
         {
+            if (!ReferenceEquals(sender, _messageProcessTimer)) return;
             if (_messageQueue.IsEmpty) return;
 
             var messagesToProcess = new List<LiveMessage>();
@@ -506,6 +521,7 @@ namespace AllLive.UWP.ViewModels
 
             _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
+                if (!ReferenceEquals(sender, _messageProcessTimer)) return;
                 foreach (var msg in messagesToProcess)
                 {
                     // 清理旧消息
@@ -561,20 +577,29 @@ namespace AllLive.UWP.ViewModels
 
         public async void Stop()
         {
-            _messageProcessTimer?.Stop();
-            _messageProcessTimer?.Dispose();
+            StopMessageProcessing();
             scTimer?.Stop();
             scTimer?.Dispose();
             scTimer = null;
             // 清空消息队列
             while (_messageQueue.TryDequeue(out _)) { }
             Messages.Clear();
-            if (LiveDanmaku != null)
+            // A refresh may start a new connection while the old Stop is awaiting.
+            // Detach the old instance first; never clear a newer connection later.
+            var oldDanmaku = LiveDanmaku;
+            LiveDanmaku = null;
+            if (oldDanmaku != null)
             {
-                LiveDanmaku.NewMessage -= LiveDanmaku_NewMessage;
-                LiveDanmaku.OnClose -= LiveDanmaku_OnClose;
-                await LiveDanmaku.Stop();
-                LiveDanmaku = null;
+                oldDanmaku.NewMessage -= LiveDanmaku_NewMessage;
+                oldDanmaku.OnClose -= LiveDanmaku_OnClose;
+                try
+                {
+                    await oldDanmaku.Stop();
+                }
+                catch (Exception ex)
+                {
+                    LogHelper.Log("停止旧弹幕连接失败", LogType.ERROR, ex);
+                }
             }
 
         }
