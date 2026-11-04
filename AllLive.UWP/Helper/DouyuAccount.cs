@@ -50,7 +50,7 @@ namespace AllLive.UWP.Helper
         public void SetDouyuSiteCookie()
         {
             // 斗鱼取流签名/播放/录制请求头统一读取该静态 Cookie;
-            // 其中 dy_did/acf_did 会被签名进程 did 取代,避免会话冲突
+            // 保留登录设备 DID；描述符、签名和请求头使用同一会话快照
             DouyuSignHelper.AccountCookie = Cookie;
         }
 

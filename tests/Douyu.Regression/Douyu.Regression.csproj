@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net9.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup Condition="'$(OfflineNewtonsoftPath)' == ''"><PackageReference Include="Newtonsoft.Json" Version="13.0.3" /></ItemGroup>
+  <ItemGroup Condition="'$(OfflineNewtonsoftPath)' != ''"><Reference Include="Newtonsoft.Json"><HintPath>$(OfflineNewtonsoftPath)</HintPath></Reference></ItemGroup>
+  <ItemGroup><Compile Include="../../AllLive.Core/Helper/DouyuSignHelper.cs" Link="DouyuSignHelper.cs" /></ItemGroup>
+</Project>

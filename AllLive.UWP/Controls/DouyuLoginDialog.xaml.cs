@@ -22,6 +22,8 @@ namespace AllLive.UWP.Controls
 
         private TaskCompletionSource<bool> _tcs;
         private bool _webViewInitialized = false;
+        private bool _initializing = false;
+        private bool _finishing = false;
         private bool _dragging = false;
         private double _dragOffsetX = 0;
         private double _dragOffsetY = 0;
@@ -29,7 +31,8 @@ namespace AllLive.UWP.Controls
         public DouyuLoginDialog()
         {
             this.InitializeComponent();
-            this.Loaded += DouyuLoginDialog_Loaded;
+            // Only the Popup child enters the visual tree; this unattached UserControl does not.
+            webView.Loaded += DouyuLoginDialog_Loaded;
             loginPopup.Closed += (sender, args) =>
             {
                 // 兜底:弹层关闭时确保等待方被唤醒
@@ -40,7 +43,8 @@ namespace AllLive.UWP.Controls
         /// <summary>打开登录框,返回登录是否成功(取消或关闭返回 false)。</summary>
         public Task<bool> ShowAsync()
         {
-            _tcs = new TaskCompletionSource<bool>();
+            if (_tcs != null && !_tcs.Task.IsCompleted) return _tcs.Task;
+            _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             CenterPopup();
             loginPopup.IsOpen = true;
             return _tcs.Task;
@@ -55,36 +59,53 @@ namespace AllLive.UWP.Controls
 
         private void Close(bool success)
         {
-            loginPopup.IsOpen = false;
+            // Resolve success before Closed can resolve the same task as false.
             _tcs?.TrySetResult(success);
+            loginPopup.IsOpen = false;
+            webView.Close();
         }
 
         private async void DouyuLoginDialog_Loaded(object sender, RoutedEventArgs e)
         {
             // Popup 打开后内容才进入可视化树,Loaded 触发时初始化 WebView2
-            if (_webViewInitialized)
+            if (_webViewInitialized || _initializing || !loginPopup.IsOpen)
             {
                 return;
             }
+            _initializing = true;
+            BtnDone.IsEnabled = false;
             try
             {
                 txtStatus.Text = "正在初始化 WebView2...";
-                await webView.EnsureCoreWebView2Async();
+                var initialize = webView.EnsureCoreWebView2Async();
+                if (await Task.WhenAny(initialize, Task.Delay(TimeSpan.FromSeconds(20))) != initialize)
+                {
+                    // Observe a late failure without touching a closed dialog or logging sensitive data.
+                    _ = initialize.ContinueWith(task => { var ignored = task.Exception; }, TaskContinuationOptions.OnlyOnFaulted);
+                    if (loginPopup.IsOpen) txtStatus.Text = "WebView2 初始化超时，请取消后重新打开登录窗口";
+                    return;
+                }
+                await initialize;
+                if (!loginPopup.IsOpen) return;
                 webView.CoreWebView2.Settings.UserAgent = CHROME_UA;
                 webView.NavigationCompleted += WebView_NavigationCompleted;
                 // 直接打开独立登录页,只显示登录框(扫码/账号登录),不带门户内容
+                txtStatus.Text = "正在加载斗鱼登录页面...";
                 webView.CoreWebView2.Navigate("https://passport.douyu.com/");
                 _webViewInitialized = true;
+                BtnDone.IsEnabled = true;
             }
             catch (Exception ex)
             {
-                LogHelper.Log("WebView2初始化失败", LogType.ERROR, ex);
-                txtStatus.Text = "WebView2 初始化失败，请确保已安装 Edge WebView2 Runtime\n" + ex.Message;
+                LogHelper.Log($"斗鱼登录初始化失败 HRESULT={ex.HResult}", LogType.ERROR);
+                if (loginPopup.IsOpen) txtStatus.Text = $"WebView2 初始化失败 ({ex.HResult})，请检查 Edge WebView2 Runtime";
             }
+            finally { _initializing = false; }
         }
 
         private void WebView_NavigationCompleted(Microsoft.UI.Xaml.Controls.WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
         {
+            if (!loginPopup.IsOpen) return;
             if (args.IsSuccess)
             {
                 txtStatus.Text = "请使用斗鱼App扫码登录，或切换账号密码登录，成功后点击「完成登录」";
@@ -137,6 +158,9 @@ namespace AllLive.UWP.Controls
 
         private async void TryFinishLogin()
         {
+            if (_finishing || !loginPopup.IsOpen) return;
+            _finishing = true;
+            BtnDone.IsEnabled = false;
             try
             {
                 if (webView.CoreWebView2 == null)
@@ -147,6 +171,7 @@ namespace AllLive.UWP.Controls
 
                 var cookies = await webView.CoreWebView2.CookieManager.GetCookiesAsync("https://www.douyu.com");
 
+                if (!loginPopup.IsOpen) return;
                 var cookieParts = new List<string>();
                 foreach (var cookie in cookies)
                 {
@@ -160,9 +185,9 @@ namespace AllLive.UWP.Controls
                 }
 
                 // 检查是否包含登录态关键 Cookie(acf_auth 为斗鱼登录令牌)
-                bool hasLoginToken = cookieParts.Any(c =>
-                    c.StartsWith("acf_auth=") ||
-                    c.StartsWith("acf_uid="));
+                // UID alone is not proof of login. Web login uses dy_auth; H5 may use JWT.
+                bool hasLoginToken = cookies.Any(c => !string.IsNullOrWhiteSpace(c.Value) &&
+                    (c.Name == "dy_auth" || c.Name == "acf_auth" || c.Name == "acf_jwt_token"));
 
                 if (!hasLoginToken)
                 {
@@ -178,8 +203,13 @@ namespace AllLive.UWP.Controls
             }
             catch (Exception ex)
             {
-                LogHelper.Log("获取斗鱼Cookie失败", LogType.ERROR, ex);
-                txtStatus.Text = "获取Cookie失败: " + ex.Message;
+                LogHelper.Log($"获取斗鱼登录状态失败 HRESULT={ex.HResult}", LogType.ERROR);
+                if (loginPopup.IsOpen) txtStatus.Text = $"读取登录状态失败 ({ex.HResult})";
+            }
+            finally
+            {
+                _finishing = false;
+                if (loginPopup.IsOpen) BtnDone.IsEnabled = _webViewInitialized;
             }
         }
     }

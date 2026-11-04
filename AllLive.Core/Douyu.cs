@@ -240,30 +240,38 @@ namespace AllLive.Core
             {
                 try
                 {
-                    var form = await DouyuSignHelper.BuildFormAsync(rid, rate, cdn, forceRefresh: attempt > 0 || forceRefresh);
+                    var request = await DouyuSignHelper.BuildRequestAsync(rid, rate, cdn, forceRefresh: attempt > 0 || forceRefresh);
                     var result = await HttpUtil.PostFormUrlEncodedString(
                         $"https://www.douyu.com/lapi/live/getH5PlayV1/{rid}",
-                        form,
-                        DouyuSignHelper.RequestHeaders(rid));
+                        request.Form,
+                        request.Headers, useCookies: false);
+                    if (!request.IsCurrent)
+                        throw new Exception("斗鱼取流失败 [session_changed]：账号已切换，请重试");
                     var obj = JObject.Parse(result);
                     var errorCode = obj["error"]?.ToObject<int>() ?? obj["code"]?.ToObject<int>() ?? -1;
                     if (errorCode != 0)
                     {
-                        throw new Exception($"斗鱼取流接口返回错误 {errorCode}: {obj["msg"]}");
+                        throw new Exception($"斗鱼取流失败 [play_api]：接口错误码 {errorCode}");
                     }
                     var data = obj["data"] as JObject;
                     if (data == null)
                     {
-                        throw new Exception("斗鱼取流接口响应缺少 data");
+                        throw new Exception("斗鱼取流失败 [play_data]：接口响应缺少 data");
                     }
                     return data;
                 }
                 catch (Exception ex)
                 {
-                    lastError = ex;
+                    // Do not include response bodies, signed URLs, cookies or arbitrary server messages.
+                    var reason = ex is System.Net.Http.HttpRequestException ? "斗鱼取流失败 [play_http]：HTTP 请求失败"
+                        : ex is Newtonsoft.Json.JsonException ? "斗鱼取流失败 [play_json]：接口响应格式无效"
+                        : ex.Message.StartsWith("斗鱼", StringComparison.Ordinal) ? ex.Message
+                        : "斗鱼取流失败 [play_unknown]：请求处理失败";
+                    lastError = new Exception(reason);
+                    System.Diagnostics.Trace.WriteLine($"[Douyu] attempt={attempt + 1} {reason}");
                 }
             }
-            throw new Exception("斗鱼取流请求失败", lastError);
+            throw new Exception("斗鱼取流请求失败：" + lastError?.Message, lastError);
         }
 
         private static List<string> ParseCdnCodes(JObject data)

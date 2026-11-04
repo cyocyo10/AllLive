@@ -25,7 +25,16 @@ namespace AllLive.Core.Helper
 
         private static HttpClient SharedClient => _sharedClient.Value;
 
-        public static async Task<string> GetString(string url, IDictionary<string, string> headers = null, IDictionary<string, string> queryParameters = null)
+        // Explicit account snapshots must not inherit cookies from earlier responses/accounts.
+        private static readonly Lazy<HttpClient> _statelessClient = new Lazy<HttpClient>(() =>
+            new HttpClient(new HttpClientHandler
+            {
+                UseCookies = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+            }) { Timeout = TimeSpan.FromSeconds(30) });
+
+
+        public static async Task<string> GetString(string url, IDictionary<string, string> headers = null, IDictionary<string, string> queryParameters = null, bool useCookies = true)
         {
             if (queryParameters != null && queryParameters.Count > 0)
             {
@@ -51,7 +60,7 @@ namespace AllLive.Core.Helper
                         request.Headers.TryAddWithoutValidation(item.Key, item.Value);
                     }
                 }
-                using (var result = await SharedClient.SendAsync(request).ConfigureAwait(false))
+                using (var result = await (useCookies ? SharedClient : _statelessClient.Value).SendAsync(request).ConfigureAwait(false))
                 {
                     result.EnsureSuccessStatusCode();
                     return await result.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -143,7 +152,7 @@ namespace AllLive.Core.Helper
         /// <summary>
         /// POST 预编码的表单字符串(application/x-www-form-urlencoded)，内容原样发送，不做二次编码。
         /// </summary>
-        public static async Task<string> PostFormUrlEncodedString(string url, string formData, IDictionary<string, string> headers = null)
+        public static async Task<string> PostFormUrlEncodedString(string url, string formData, IDictionary<string, string> headers = null, bool useCookies = true)
         {
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
@@ -155,7 +164,7 @@ namespace AllLive.Core.Helper
                     }
                 }
                 request.Content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
-                using (var result = await SharedClient.SendAsync(request).ConfigureAwait(false))
+                using (var result = await (useCookies ? SharedClient : _statelessClient.Value).SendAsync(request).ConfigureAwait(false))
                 {
                     result.EnsureSuccessStatusCode();
                     return await result.Content.ReadAsStringAsync().ConfigureAwait(false);
