@@ -24,6 +24,11 @@ jobs:
         run: |
           $cert = [System.Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
           [IO.File]::WriteAllBytes("${{ github.workspace }}\AllLive.UWP\AllLive.UWP_TemporaryKey.pfx", $cert)
+          $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($cert)
+          Write-Host "Signing certificate thumbprint: $($certificate.Thumbprint)"
+          Write-Host "Signing certificate subject: $($certificate.Subject)"
+          Write-Host "Signing certificate validity: $($certificate.NotBefore.ToUniversalTime().ToString('o')) to $($certificate.NotAfter.ToUniversalTime().ToString('o'))"
+          Write-Host "Signing certificate contains private key: $($certificate.HasPrivateKey)"
 
       - name: Update version number
         run: |
