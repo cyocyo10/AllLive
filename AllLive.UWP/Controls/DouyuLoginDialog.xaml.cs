@@ -77,7 +77,7 @@ namespace AllLive.UWP.Controls
             try
             {
                 txtStatus.Text = "正在初始化 WebView2...";
-                var initialize = webView.EnsureCoreWebView2Async();
+                var initialize = webView.EnsureCoreWebView2Async().AsTask();
                 if (await Task.WhenAny(initialize, Task.Delay(TimeSpan.FromSeconds(20))) != initialize)
                 {
                     // Observe a late failure without touching a closed dialog or logging sensitive data.
