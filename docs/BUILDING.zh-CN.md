@@ -54,6 +54,17 @@ msbuild AllLive.UWP/AllLive.UWP.csproj /p:Configuration=Release /p:Platform=x64 
 - 当前工作流上传 `AllLive.UWP/AppPackages` 下的 `.msix` 和 `.cer` 文件。只有核实发布者和来源后，才按 Windows 的提示安装、信任对应证书。
 - 覆盖安装还受包身份、签名与版本约束。先保留旧版本和用户数据，不能仅凭产物生成就保证可以覆盖安装。
 
+### 按分支核对签名与构建证据
+
+以下记录核对于 **2026-11-09**，用于区分历史构建结果，不代表当前所有分支都可成功签名：
+
+- `master` 的 [`bba0e2a` 工程配置](https://github.com/cyocyo10/AllLive/blob/bba0e2ae934cc3abb3c433ab40391a4e73b3f5ba/AllLive.UWP/AllLive.UWP.csproj)固定证书指纹为 `5F0BEA425CA140436E7E0440F480831C0792452C`。本整理分支继承该配置，未修改签名设置；查到的 `master` 最近一次成功 Build UWP 是 [2026-10-06 的构建](https://github.com/cyocyo10/AllLive/actions/runs/37449438691)，对应同一提交。
+- `fix/douyu-login-session-20261104` 的 [`c044526` 工程配置](https://github.com/cyocyo10/AllLive/blob/c04452606f947262a5dc7b7947b842fa8568ac1a/AllLive.UWP/AllLive.UWP.csproj)使用另一指纹 `B029F0743A6568E6D1E3F601FA8BB8DEE95E01F6`，其 [2026-11-05 的构建](https://github.com/cyocyo10/AllLive/actions/runs/41950425218)成功。该结果仅证明该提交在当次构建条件下通过，不能作为 `master` 或本整理分支当前可签名的证据。
+
+重新构建时，应按**目标分支和提交号**核对工程指纹、实际使用证书的公开指纹、有效期与发布者，以及该次构建日志和产物。上述历史记录不能证明当前 `SIGNING_CERTIFICATE` 的内容，也不能据此断言它与 `master` 匹配或不匹配。不要输出或提交证书私钥、密码或 secret 内容。
+
+本次文档与文件整理只做静态检查，未运行 Windows 构建、签名或安装验证；签名设置差异仍保持原样，未将修复分支合入。
+
 ### Release 中的 QuickJS 配置
 
 [AllLive.Core.csproj](../AllLive.Core/AllLive.Core.csproj) 已设置 `QuickJS.NET` 的 `PrivateAssets=all`，并在 `Release|AnyCPU` 下定义 `WINDOWS_UWP`。旧版 UWP README 中要求手工添加这两项的步骤已不适用。
