@@ -2,7 +2,7 @@ name: Build UWP
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, 'fix/douyin-login-20261123']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
