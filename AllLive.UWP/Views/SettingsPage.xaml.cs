@@ -194,8 +194,8 @@ namespace AllLive.UWP.Views
 
             if (DouyinAccount.Instance.Logined)
             {
-                txtDouyin.Text = "已登录";
-                BtnLoginDouyin.Visibility = Visibility.Collapsed;
+                txtDouyin.Text = "已保存会话（未核验），可重新登录";
+                BtnLoginDouyin.Content = "重新登录";
                 BtnLogoutDouyin.Visibility = Visibility.Visible;
             }
 
@@ -275,18 +275,24 @@ namespace AllLive.UWP.Views
 
         private async void BtnLoginDouyin_Click(object sender, RoutedEventArgs e)
         {
-            if (DouyinAccount.Instance.Logined)
-            {
-                Utils.ShowMessageToast("已登录");
+            if (!BtnLoginDouyin.IsEnabled)
                 return;
-            }
-            var dialog = new AllLive.UWP.Controls.DouyinLoginDialog();
-            await dialog.ShowAsync();
-            if (dialog.LoginSuccess)
+
+            BtnLoginDouyin.IsEnabled = false;
+            try
             {
-                txtDouyin.Text = "已登录";
-                BtnLoginDouyin.Visibility = Visibility.Collapsed;
-                BtnLogoutDouyin.Visibility = Visibility.Visible;
+                var dialog = new AllLive.UWP.Controls.DouyinLoginDialog();
+                await dialog.ShowAsync();
+                if (dialog.LoginSuccess)
+                {
+                    txtDouyin.Text = "已保存会话（未核验），可重新登录";
+                    BtnLoginDouyin.Content = "重新登录";
+                    BtnLogoutDouyin.Visibility = Visibility.Visible;
+                }
+            }
+            finally
+            {
+                BtnLoginDouyin.IsEnabled = true;
             }
         }
 
@@ -294,6 +300,7 @@ namespace AllLive.UWP.Views
         {
             DouyinAccount.Instance.Logout();
             txtDouyin.Text = "登录后可搜索直播间";
+            BtnLoginDouyin.Content = "立即登录";
             BtnLoginDouyin.Visibility = Visibility.Visible;
             BtnLogoutDouyin.Visibility = Visibility.Collapsed;
         }

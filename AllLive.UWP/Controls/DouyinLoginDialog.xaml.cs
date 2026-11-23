@@ -1,7 +1,6 @@
 using AllLive.UWP.Helper;
 using Microsoft.Web.WebView2.Core;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -10,93 +9,124 @@ namespace AllLive.UWP.Controls
 {
     public sealed partial class DouyinLoginDialog : ContentDialog
     {
-        private const string CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
-        public bool LoginSuccess { get; private set; } = false;
+        private const string LoginPage = "https://www.douyin.com/";
+        private const string SearchPage = "https://www.douyin.com/aweme/v1/web/live/search/";
+        private bool initialized;
+        private bool closed;
+        private bool saving;
+        private bool pageReady;
+        private ulong navigationId;
+        private long navigationVersion;
+
+        public bool LoginSuccess { get; private set; }
 
         public DouyinLoginDialog()
         {
-            this.InitializeComponent();
-            this.Loaded += DouyinLoginDialog_Loaded;
+            InitializeComponent();
+            IsPrimaryButtonEnabled = false;
+            Loaded += DouyinLoginDialog_Loaded;
+            Closing += (_, __) => closed = true;
         }
 
         private async void DouyinLoginDialog_Loaded(object sender, RoutedEventArgs e)
         {
+            if (initialized || closed)
+                return;
+
+            initialized = true;
             try
             {
                 txtStatus.Text = "正在初始化 WebView2...";
                 await webView.EnsureCoreWebView2Async();
-                webView.CoreWebView2.Settings.UserAgent = CHROME_UA;
+                if (closed)
+                    return;
+
+                webView.CoreWebView2.NavigationStarting += (_, args) =>
+                {
+                    navigationId = args.NavigationId;
+                    navigationVersion++;
+                    pageReady = false;
+                    IsPrimaryButtonEnabled = false;
+                    txtStatus.Text = "正在打开抖音网页...";
+                };
                 webView.NavigationCompleted += WebView_NavigationCompleted;
-                webView.CoreWebView2.Navigate("https://www.douyin.com/passport/general/login_guiding_strategy/?aid=6383");
+                webView.CoreWebView2.Navigate(LoginPage);
             }
             catch (Exception ex)
             {
-                LogHelper.Log("WebView2初始化失败", LogType.ERROR, ex);
-                txtStatus.Text = "WebView2 初始化失败，请确保已安装 Edge WebView2 Runtime\n" + ex.Message;
-                txtStatus.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Red);
+                LogHelper.Log($"抖音 WebView2 初始化失败 (0x{ex.HResult:X8})", LogType.ERROR);
+                if (!closed)
+                    txtStatus.Text = "无法打开抖音网页。请确认已安装 Edge WebView2 Runtime 后重试。";
             }
         }
 
         private void WebView_NavigationCompleted(Microsoft.UI.Xaml.Controls.WebView2 sender, CoreWebView2NavigationCompletedEventArgs args)
         {
-            if (args.IsSuccess)
-            {
-                txtStatus.Text = "请登录抖音账号，登录成功后点击「完成登录」";
-            }
+            if (closed || args.NavigationId != navigationId)
+                return;
+
+            pageReady = args.IsSuccess && IsDouyinPage(webView.CoreWebView2?.Source);
+            IsPrimaryButtonEnabled = pageReady && !saving;
+            if (pageReady)
+                txtStatus.Text = "在抖音网页内点击「登录」。登录后，再点击下方「完成登录」。";
+            else if (!args.IsSuccess)
+                txtStatus.Text = $"抖音网页加载失败（{args.WebErrorStatus}）。请关闭窗口后重试。";
             else
-            {
-                txtStatus.Text = $"页面加载失败({args.WebErrorStatus})，请重试";
-            }
+                txtStatus.Text = "当前不是抖音网页，无法保存登录状态。";
+        }
+
+        private static bool IsDouyinPage(string source)
+        {
+            return Uri.TryCreate(source, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && uri.Host.Equals("www.douyin.com", StringComparison.OrdinalIgnoreCase);
         }
 
         private async void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             args.Cancel = true;
+            var core = webView.CoreWebView2;
+            if (closed || saving || !pageReady || core == null || !IsDouyinPage(core.Source))
+                return;
+
+            saving = true;
+            IsPrimaryButtonEnabled = false;
+            long checkedNavigation = navigationVersion;
             try
             {
-                if (webView.CoreWebView2 == null)
+                // Only obtain cookies applicable to the existing Douyin search request.
+                var cookies = await core.CookieManager.GetCookiesAsync(SearchPage);
+                if (closed || !pageReady || checkedNavigation != navigationVersion || !IsDouyinPage(core.Source))
+                    return;
+
+                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                var usable = cookies.Where(cookie =>
+                    !string.IsNullOrWhiteSpace(cookie.Value)
+                    && (cookie.IsSession || cookie.Expires > now)).ToList();
+
+                // A session cookie is a local signal, not proof of server acceptance.
+                if (!usable.Any(cookie => cookie.Name == "sessionid" || cookie.Name == "sessionid_ss"))
                 {
-                    txtStatus.Text = "WebView2 未初始化";
+                    txtStatus.Text = "没有检测到有效期内的抖音登录会话。请先在网页里登录，再点击完成。";
                     return;
                 }
 
-                var cookies = await webView.CoreWebView2.CookieManager.GetCookiesAsync("https://www.douyin.com");
-
-                var cookieParts = new List<string>();
-                foreach (var cookie in cookies)
-                {
-                    cookieParts.Add($"{cookie.Name}={cookie.Value}");
-                }
-
-                if (cookieParts.Count == 0)
-                {
-                    txtStatus.Text = "未检测到Cookie，请先登录";
-                    return;
-                }
-
-                var cookieStr = string.Join(";", cookieParts);
-
-                // 检查是否包含关键cookie（登录后才有的）
-                bool hasSessionId = cookieParts.Any(c =>
-                    c.StartsWith("sessionid") ||
-                    c.StartsWith("sid_tt") ||
-                    c.StartsWith("sid_guard"));
-
-                if (!hasSessionId)
-                {
-                    txtStatus.Text = "似乎还未登录成功，请确认已登录后再点击完成";
-                    return;
-                }
-
-                DouyinAccount.Instance.SetCookie(cookieStr);
+                DouyinAccount.Instance.SetCookie(string.Join("; ", usable.Select(cookie => $"{cookie.Name}={cookie.Value}")));
                 LoginSuccess = true;
-                Utils.ShowMessageToast("抖音登录成功");
-                this.Hide();
+                Utils.ShowMessageToast("已保存抖音登录会话");
+                Hide();
             }
             catch (Exception ex)
             {
-                LogHelper.Log("获取抖音Cookie失败", LogType.ERROR, ex);
-                txtStatus.Text = "获取Cookie失败: " + ex.Message;
+                LogHelper.Log($"读取抖音登录会话失败 (0x{ex.HResult:X8})", LogType.ERROR);
+                if (!closed && checkedNavigation == navigationVersion)
+                    txtStatus.Text = "读取抖音登录会话失败，请重试。";
+            }
+            finally
+            {
+                saving = false;
+                if (!closed && !LoginSuccess)
+                    IsPrimaryButtonEnabled = pageReady;
             }
         }
 
