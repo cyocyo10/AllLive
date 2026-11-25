@@ -14,6 +14,7 @@ namespace AllLive.UWP.Controls
         private bool initialized;
         private bool closed;
         private bool saving;
+        private bool committing;
         private bool pageReady;
         private ulong navigationId;
         private long navigationVersion;
@@ -25,7 +26,15 @@ namespace AllLive.UWP.Controls
             InitializeComponent();
             IsPrimaryButtonEnabled = false;
             Loaded += DouyinLoginDialog_Loaded;
-            Closing += (_, __) => closed = true;
+            Closing += (_, args) =>
+            {
+                if (committing)
+                {
+                    args.Cancel = true;
+                    return;
+                }
+                closed = true;
+            };
         }
 
         private async void DouyinLoginDialog_Loaded(object sender, RoutedEventArgs e)
@@ -92,6 +101,7 @@ namespace AllLive.UWP.Controls
             saving = true;
             IsPrimaryButtonEnabled = false;
             long checkedNavigation = navigationVersion;
+            bool writingSession = false;
             try
             {
                 // Only obtain cookies applicable to the existing Douyin search request.
@@ -111,23 +121,29 @@ namespace AllLive.UWP.Controls
                     return;
                 }
 
-                DouyinAccount.Instance.SetCookie(string.Join("; ", usable.Select(cookie => $"{cookie.Name}={cookie.Value}")));
+                committing = true;
+                writingSession = true;
+                txtStatus.Text = "正在保存抖音登录会话…";
+                await DouyinAccount.Instance.SetCookie(string.Join("; ", usable.Select(cookie => $"{cookie.Name}={cookie.Value}")));
                 LoginSuccess = true;
-                Utils.ShowMessageToast("已保存抖音登录会话");
-                Hide();
             }
             catch (Exception ex)
             {
-                LogHelper.Log($"读取抖音登录会话失败 (0x{ex.HResult:X8})", LogType.ERROR);
-                if (!closed && checkedNavigation == navigationVersion)
-                    txtStatus.Text = "读取抖音登录会话失败，请重试。";
+                var operation = writingSession ? "保存" : "读取";
+                LogHelper.Log($"{operation}抖音登录会话失败 (0x{ex.HResult:X8})", LogType.ERROR);
+                if (!closed && (writingSession || checkedNavigation == navigationVersion))
+                    txtStatus.Text = $"{operation}抖音登录会话失败（0x{ex.HResult:X8}），请重试。";
             }
             finally
             {
+                committing = false;
                 saving = false;
                 if (!closed && !LoginSuccess)
                     IsPrimaryButtonEnabled = pageReady;
             }
+
+            if (LoginSuccess)
+                Hide();
         }
 
         private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)

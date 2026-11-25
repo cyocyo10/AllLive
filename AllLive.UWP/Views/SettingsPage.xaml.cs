@@ -192,13 +192,6 @@ namespace AllLive.UWP.Views
                 BtnLogoutBili.Visibility = Visibility.Visible;
             }
 
-            if (DouyinAccount.Instance.Logined)
-            {
-                txtDouyin.Text = "已保存会话（未核验），可重新登录";
-                BtnLoginDouyin.Content = "重新登录";
-                BtnLogoutDouyin.Visibility = Visibility.Visible;
-            }
-
             if (DouyuAccount.Instance.Logined)
             {
                 txtDouyu.Text = "已登录";
@@ -207,10 +200,17 @@ namespace AllLive.UWP.Views
             }
            
         }
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             version.Text = $"{SystemInformation.Instance.ApplicationVersion.Major}.{SystemInformation.Instance.ApplicationVersion.Minor}.{SystemInformation.Instance.ApplicationVersion.Build}";
+            await DouyinAccount.Instance.InitLoginInfo();
+            if (DouyinAccount.Instance.Logined)
+            {
+                txtDouyin.Text = "已保存会话（未核验），可重新登录";
+                BtnLoginDouyin.Content = "重新登录";
+                BtnLogoutDouyin.Visibility = Visibility.Visible;
+            }
         }
         private void RemoveLiveDanmuWord_Click(object sender, RoutedEventArgs e)
         {
@@ -296,13 +296,31 @@ namespace AllLive.UWP.Views
             }
         }
 
-        private void BtnLogoutDouyin_Click(object sender, RoutedEventArgs e)
+        private async void BtnLogoutDouyin_Click(object sender, RoutedEventArgs e)
         {
-            DouyinAccount.Instance.Logout();
-            txtDouyin.Text = "登录后可搜索直播间";
-            BtnLoginDouyin.Content = "立即登录";
-            BtnLoginDouyin.Visibility = Visibility.Visible;
-            BtnLogoutDouyin.Visibility = Visibility.Collapsed;
+            if (!BtnLogoutDouyin.IsEnabled)
+                return;
+
+            BtnLogoutDouyin.IsEnabled = false;
+            BtnLoginDouyin.IsEnabled = false;
+            try
+            {
+                await DouyinAccount.Instance.Logout();
+                txtDouyin.Text = "登录后可搜索直播间";
+                BtnLoginDouyin.Content = "立即登录";
+                BtnLoginDouyin.Visibility = Visibility.Visible;
+                BtnLogoutDouyin.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Log($"退出抖音登录失败 (0x{ex.HResult:X8})", LogType.ERROR);
+                Utils.ShowMessageToast("退出抖音登录失败，请重试");
+            }
+            finally
+            {
+                BtnLogoutDouyin.IsEnabled = true;
+                BtnLoginDouyin.IsEnabled = true;
+            }
         }
 
         private async void BtnLoginDouyu_Click(object sender, RoutedEventArgs e)

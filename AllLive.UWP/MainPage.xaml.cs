@@ -87,7 +87,7 @@ namespace AllLive.UWP
         {
             base.OnNavigatedTo(e);
             _ = BiliAccount.Instance.InitLoginInfo();
-            DouyinAccount.Instance.InitLoginInfo();
+            _ = DouyinAccount.Instance.InitLoginInfo();
             DouyuAccount.Instance.InitLoginInfo();
             _ = CheckUpdate();
         }
@@ -112,6 +112,7 @@ namespace AllLive.UWP
             }
             if (!await ParseUrl(args.QueryText))
             {
+                await DouyinAccount.Instance.InitLoginInfo();
                 this.Frame.Navigate(typeof(SearchPage), args.QueryText);
             }
         }
